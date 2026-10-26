@@ -329,6 +329,12 @@ export const makeGetBookingPreviewRequest = bookingId => {
     .then(res => res.data);
 };
 
+export const makeGetDealRequest = dealId => {
+  return APIClient()
+    .get(`${ENDPOINTS.DEAL_PREVIEW}/${dealId}`)
+    .then(res => res.data);
+};
+
 export const makeGetHostProductCatalogRequest = params => {
   return APIClient()
     .get(ENDPOINTS.PRODUCT_CATALOG, {params})

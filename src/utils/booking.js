@@ -405,7 +405,16 @@ export const formatBookingPreviewResponse = response => {
   const guest = payload?.guest || {};
   const host = payload?.host || {};
   const homestay = payload?.conversation?.homestay || {};
-  const images = Array.isArray(homestay?.images) ? homestay.images : [];
+  const images = (Array.isArray(homestay?.images) ? [...homestay.images] : []).sort(
+    (left, right) => (Number(left?.displayOrder) || 0) - (Number(right?.displayOrder) || 0),
+  );
+  const propertyImages = images
+    .map(image =>
+      typeof image === 'string'
+        ? image
+        : image?.imageUrl || image?.url || image?.thumbnailUrl || '',
+    )
+    .filter(Boolean);
   const offeredPrice = Number(terms?.offeredPrice) || 0;
   const advancePayment = Number(terms?.advancePayment) || 0;
   const {noteLines, noteClosing} = parsePreviewBookingNote(
@@ -416,7 +425,8 @@ export const formatBookingPreviewResponse = response => {
     title: homestay?.title || '',
     propertyName: homestay?.title || '',
     propertyAddress: formatPreviewPropertyAddress(homestay),
-    propertyImageUrl: images[0]?.imageUrl || '',
+    propertyImageUrl: propertyImages[0] || '',
+    propertyImages,
     propertyType: formatPreviewPropertyType(homestay?.propertyType),
     bedrooms: homestay?.totalBedrooms,
     bathrooms: homestay?.totalBathrooms,
@@ -434,10 +444,12 @@ export const formatBookingPreviewResponse = response => {
     checkIn: {
       date: formatPreviewBookingDate(terms?.checkIn),
       time: formatPreviewBookingTime(homestay?.checkInTime),
+      iso: terms?.checkIn || '',
     },
     checkOut: {
       date: formatPreviewBookingDate(terms?.checkOut),
       time: formatPreviewBookingTime(homestay?.checkOutTime),
+      iso: terms?.checkOut || '',
     },
     occupancy: {
       adults: Number(terms?.guests) || 0,

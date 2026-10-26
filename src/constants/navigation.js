@@ -32,6 +32,7 @@ export default {
         CART_SCREEN: 'Common-CartScreen',
         CHECKOUT_SCREEN: 'Common-CheckoutScreen',
         SHOP_PRODUCT_DETAIL_SCREEN: 'Common-ShopProductDetailScreen',
-        DEALS_SCREEN: 'Common-DealsScreen'
+        DEALS_SCREEN: 'Common-DealsScreen',
+        DEAL_PREVIEW_SCREEN: 'Common-DealPreviewScreen'
     }
 };

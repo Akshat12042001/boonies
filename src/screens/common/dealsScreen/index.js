@@ -5,11 +5,28 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useTranslation} from 'react-i18next';
 import moment from 'moment';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
-import {Input, ScreenContainer, StyledText} from '../../../components/atoms';
-import {BookingCalendarModal} from '../../../components/modals';
+import {
+  ActionLoadingOverlay,
+  Input,
+  ScreenContainer,
+  StyledText,
+} from '../../../components/atoms';
+import {
+  BookingCalendarModal,
+  PreviewBookingModal,
+} from '../../../components/modals';
 import {BookingCard, ScreenHeader} from '../../../components/molecules';
-import {makeGetHostAllBookingsRequest} from '../../../api/common';
+import {
+  makeGetBookingPreviewRequest,
+  makeGetHostAllBookingsRequest,
+} from '../../../api/common';
+import {errorToast} from '../../../utils/alerts';
+import {formatBookingPreviewResponse} from '../../../utils/booking';
 import {mapHostDealsResponse} from '../../../utils/deals';
+import {
+  getDealSummaryShareTitle,
+  shareDealSummary,
+} from '../../../utils/shareDealSummary';
 import useDebouncedValue from '../../../utils/useDebouncedValue';
 import {
   CalendarIcon,
@@ -20,7 +37,7 @@ import {
   ShareIcon,
   TagIcon,
 } from '../../../components/svgs';
-import {COLORS} from '../../../constants';
+import {COLORS, NAVIGATION} from '../../../constants';
 import styles from './styles';
 
 const DATE_FIELD = {
@@ -33,7 +50,8 @@ const FIELD_FOCUS = COLORS.LOGIN_PRIMARY;
 const PAGE_LIMIT = 5;
 const EMPTY_STATS = {total: 0, pending: 0, accepted: 0, rejected: 0};
 
-const formatDisplayDate = date => (date ? moment(date).format('DD/MM/YYYY') : '');
+const formatDisplayDate = date =>
+  date ? moment(date).format('DD/MM/YYYY') : '';
 
 const DealsSkeleton = () => (
   <View>
@@ -69,39 +87,50 @@ const DEAL_MENU_ITEMS = [
   },
 ];
 
-const StatCard = React.memo(({label, value, hint, valueColor, iconBackground, iconColor, Icon, spaced}) => (
-  <View style={[styles.card, spaced && styles.cardSpacing]}>
-    <View style={[styles.iconWrap, {backgroundColor: iconBackground}]}>
-      <Icon color={iconColor} size={15} />
+const StatCard = React.memo(
+  ({
+    label,
+    value,
+    hint,
+    valueColor,
+    iconBackground,
+    iconColor,
+    Icon,
+    spaced,
+  }) => (
+    <View style={[styles.card, spaced && styles.cardSpacing]}>
+      <View style={[styles.iconWrap, {backgroundColor: iconBackground}]}>
+        <Icon color={iconColor} size={15} />
+      </View>
+      <StyledText
+        color={COLORS.TEXT_SECONDARY}
+        size={11}
+        lineHeight={14}
+        textAlign="center"
+        containerStyle={styles.label}
+        numberOfLines={1}>
+        {label}
+      </StyledText>
+      <StyledText
+        color={valueColor}
+        variant="bold"
+        size={16}
+        lineHeight={20}
+        textAlign="center"
+        containerStyle={styles.value}>
+        {value}
+      </StyledText>
+      <StyledText
+        color={COLORS.TEXT_MUTED}
+        size={10}
+        lineHeight={13}
+        textAlign="center"
+        numberOfLines={1}>
+        {hint}
+      </StyledText>
     </View>
-    <StyledText
-      color={COLORS.TEXT_SECONDARY}
-      size={11}
-      lineHeight={14}
-      textAlign="center"
-      containerStyle={styles.label}
-      numberOfLines={1}>
-      {label}
-    </StyledText>
-    <StyledText
-      color={valueColor}
-      variant="bold"
-      size={16}
-      lineHeight={20}
-      textAlign="center"
-      containerStyle={styles.value}>
-      {value}
-    </StyledText>
-    <StyledText
-      color={COLORS.TEXT_MUTED}
-      size={10}
-      lineHeight={13}
-      textAlign="center"
-      numberOfLines={1}>
-      {hint}
-    </StyledText>
-  </View>
-));
+  ),
+);
 
 const DealsScreen = () => {
   const navigation = useNavigation();
@@ -119,6 +148,11 @@ const DealsScreen = () => {
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [isError, setIsError] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [isPreviewVisible, setIsPreviewVisible] = useState(false);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
+  const [previewTitle, setPreviewTitle] = useState('');
+  const [sharingDealId, setSharingDealId] = useState(null);
   const requestIdRef = useRef(0);
   const loadingMoreRef = useRef(false);
   const debouncedSearch = useDebouncedValue(searchQuery, 400);
@@ -296,6 +330,97 @@ const DealsScreen = () => {
     [stats.accepted, stats.pending, stats.rejected, stats.total, t],
   );
 
+  const handleClosePreview = useCallback(() => {
+    setIsPreviewVisible(false);
+    setPreviewData(null);
+    setPreviewTitle('');
+    setIsPreviewLoading(false);
+  }, []);
+
+  const handleOpenPreview = useCallback(async (dealId, fallbackTitle = '') => {
+    setPreviewTitle(fallbackTitle);
+    setPreviewData(null);
+    setTimeout(() => {
+      setIsPreviewVisible(true);
+      setIsPreviewLoading(true);
+    }, 500);
+
+    try {
+      const response = await makeGetBookingPreviewRequest(dealId);
+      setPreviewData(formatBookingPreviewResponse(response));
+    } catch {
+      setIsPreviewVisible(false);
+      setPreviewData(null);
+      setPreviewTitle('');
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  }, []);
+
+  const handleShareDeal = useCallback(
+    async (dealId, fallbackTitle = '') => {
+      if (sharingDealId) {
+        return;
+      }
+
+      try {
+        setSharingDealId(dealId);
+        const response = await makeGetBookingPreviewRequest(dealId);
+        const data = formatBookingPreviewResponse(response);
+
+        if (!data) {
+          errorToast(t('BOOKING_LIST.SHARE_FAILED'));
+          return;
+        }
+
+        await shareDealSummary(
+          data,
+          getDealSummaryShareTitle(
+            data.guest?.name,
+            data.propertyName || fallbackTitle,
+          ),
+        );
+      } catch (error) {
+        if (!error?.response) {
+          errorToast(t('BOOKING_LIST.SHARE_FAILED'));
+        }
+      } finally {
+        setSharingDealId(null);
+      }
+    },
+    [sharingDealId, t],
+  );
+
+  const handleCardPress = useCallback(
+    dealId => {
+      const deal = deals.find(item => String(item.id) === String(dealId));
+      handleOpenPreview(dealId, deal?.homestayTitle || '');
+    },
+    [deals, handleOpenPreview],
+  );
+
+  const handleMenuAction = useCallback(
+    (action, dealId) => {
+      const deal = deals.find(item => String(item.id) === String(dealId));
+      const fallbackTitle = deal?.homestayTitle || '';
+
+      if (action === 'view') {
+        navigation.navigate(NAVIGATION.COMMON.DEAL_PREVIEW_SCREEN, {dealId});
+        return;
+      }
+
+      if (action === 'preview') {
+        handleOpenPreview(dealId, fallbackTitle);
+        return;
+      }
+
+      if (action === 'share') {
+        handleShareDeal(dealId, fallbackTitle);
+      }
+    },
+    [deals, handleOpenPreview, handleShareDeal, navigation],
+  );
+
   return (
     <ScreenContainer noPaddingBottom noPaddingTop>
       <ScreenHeader
@@ -323,52 +448,55 @@ const DealsScreen = () => {
           {paddingBottom: (insets.bottom || 16) + 16},
         ]}>
         {showInitialSkeleton ? <DealsSkeleton /> : null}
-        {!showInitialSkeleton && rows.map((row, rowIndex) => (
-          <View
-            key={row[0].id}
-            style={[styles.row, rowIndex > 0 && styles.rowSpacing]}>
-            {row.map((card, cardIndex) => (
-              <StatCard key={card.id} {...card} spaced={cardIndex > 0} />
-            ))}
-          </View>
-        ))}
+        {!showInitialSkeleton &&
+          rows.map((row, rowIndex) => (
+            <View
+              key={row[0].id}
+              style={[styles.row, rowIndex > 0 && styles.rowSpacing]}>
+              {row.map((card, cardIndex) => (
+                <StatCard key={card.id} {...card} spaced={cardIndex > 0} />
+              ))}
+            </View>
+          ))}
 
-        {!showInitialSkeleton ? <View style={styles.filters}>
-          <Input
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder={t('DEALS.SEARCH_PLACEHOLDER')}
-            containerStyles={styles.searchField}
-            borderColor={FIELD_BORDER}
-            focusedBorderColor={FIELD_FOCUS}
-          />
-          <View style={styles.dateRow}>
+        {!showInitialSkeleton ? (
+          <View style={styles.filters}>
             <Input
-              label={t('BOOKING_LIST.CHECK_IN_FROM')}
-              value={formatDisplayDate(checkInFrom)}
-              placeholder={t('BOOKING_LIST.DATE_PLACEHOLDER')}
-              rightIcon={<CalendarIcon />}
-              editable={false}
-              onPress={handleOpenCheckInFrom}
-              onRightIconPress={handleOpenCheckInFrom}
-              containerStyles={[styles.dateField]}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder={t('DEALS.SEARCH_PLACEHOLDER')}
+              containerStyles={styles.searchField}
               borderColor={FIELD_BORDER}
               focusedBorderColor={FIELD_FOCUS}
             />
-            <Input
-              label={t('BOOKING_LIST.CHECK_IN_TO')}
-              value={formatDisplayDate(checkInTo)}
-              placeholder={t('BOOKING_LIST.DATE_PLACEHOLDER')}
-              rightIcon={<CalendarIcon />}
-              editable={false}
-              onPress={handleOpenCheckInTo}
-              onRightIconPress={handleOpenCheckInTo}
-              containerStyles={[styles.dateField, styles.dateFieldSpacing]}
-              borderColor={FIELD_BORDER}
-              focusedBorderColor={FIELD_FOCUS}
-            />
+            <View style={styles.dateRow}>
+              <Input
+                label={t('BOOKING_LIST.CHECK_IN_FROM')}
+                value={formatDisplayDate(checkInFrom)}
+                placeholder={t('BOOKING_LIST.DATE_PLACEHOLDER')}
+                rightIcon={<CalendarIcon />}
+                editable={false}
+                onPress={handleOpenCheckInFrom}
+                onRightIconPress={handleOpenCheckInFrom}
+                containerStyles={[styles.dateField]}
+                borderColor={FIELD_BORDER}
+                focusedBorderColor={FIELD_FOCUS}
+              />
+              <Input
+                label={t('BOOKING_LIST.CHECK_IN_TO')}
+                value={formatDisplayDate(checkInTo)}
+                placeholder={t('BOOKING_LIST.DATE_PLACEHOLDER')}
+                rightIcon={<CalendarIcon />}
+                editable={false}
+                onPress={handleOpenCheckInTo}
+                onRightIconPress={handleOpenCheckInTo}
+                containerStyles={[styles.dateField, styles.dateFieldSpacing]}
+                borderColor={FIELD_BORDER}
+                focusedBorderColor={FIELD_FOCUS}
+              />
+            </View>
           </View>
-        </View> : null}
+        ) : null}
 
         {!showInitialSkeleton && isLoading ? (
           <>
@@ -385,7 +513,9 @@ const DealsScreen = () => {
                 id={deal.id}
                 homestayTitle={deal.homestayTitle}
                 guestName={t(
-                  deal.guestRole === 'guest' ? 'DEALS.BY_GUEST' : 'DEALS.BY_HOST',
+                  deal.guestRole === 'guest'
+                    ? 'DEALS.BY_GUEST'
+                    : 'DEALS.BY_HOST',
                 )}
                 checkIn={deal.checkIn}
                 checkOut={deal.checkOut}
@@ -393,6 +523,8 @@ const DealsScreen = () => {
                 adults={deal.adults}
                 status={deal.status}
                 menuItems={DEAL_MENU_ITEMS}
+                onPress={handleCardPress}
+                onMenuAction={handleMenuAction}
               />
             </View>
           ))}
@@ -413,6 +545,16 @@ const DealsScreen = () => {
           </View>
         ) : null}
       </KeyboardAwareScrollView>
+
+      <ActionLoadingOverlay visible={!!sharingDealId} />
+
+      <PreviewBookingModal
+        data={previewData}
+        fallbackTitle={previewTitle}
+        isLoading={isPreviewLoading}
+        isVisible={isPreviewVisible}
+        onClose={handleClosePreview}
+      />
 
       <BookingCalendarModal
         isVisible={!!activeDateField}

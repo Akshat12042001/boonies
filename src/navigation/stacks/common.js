@@ -18,6 +18,7 @@ import {
   CheckoutScreen,
   ShopProductDetailScreen,
   DealsScreen,
+  DealPreviewScreen,
 } from '../../screens/common';
 import config from '../config';
 
@@ -89,6 +90,10 @@ export default () => {
       <Stack.Screen
         name={NAVIGATION.COMMON.DEALS_SCREEN}
         component={DealsScreen}
+      />
+      <Stack.Screen
+        name={NAVIGATION.COMMON.DEAL_PREVIEW_SCREEN}
+        component={DealPreviewScreen}
       />
       </Stack.Navigator>
   );

@@ -14,3 +14,4 @@ export {default as CartScreen} from './cartScreen';
 export {default as CheckoutScreen} from './checkoutScreen';
 export {default as ShopProductDetailScreen} from './shopProductDetailScreen';
 export {default as DealsScreen} from './dealsScreen';
+export {default as DealPreviewScreen} from './dealPreviewScreen';
