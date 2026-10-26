@@ -2,6 +2,8 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 apply from: project(':react-native-config').projectDir.getPath() + "/dotenv.gradle"
+apply plugin: 'com.android.application'
+apply plugin: 'com.google.gms.google-services' // &lt;- Add this line
 
 project.ext.vectoricons = [
     iconFontNames: [ 'MaterialIcons.ttf' ]
@@ -88,8 +90,8 @@ android {
         applicationId "com.app.boonies1"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 4
-        versionName "1.1"
+        versionCode 5
+        versionName "1.2"
     }
     signingConfigs {
         debug {

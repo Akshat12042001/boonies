@@ -4,6 +4,7 @@ import Share from 'react-native-share';
 import Clipboard from '@react-native-clipboard/clipboard';
 import createDealSummaryHtml from './dealSummaryHtml';
 import {successToast} from './alerts';
+import {getShareFileUrl, saveNamedCachePdf} from './sharePdf';
 
 const sanitizeShareName = value =>
   String(value || '')
@@ -23,9 +24,6 @@ const getFileName = data =>
     data?.guest?.name,
     data?.propertyName || data?.title,
   );
-
-const getFileUrl = filePath =>
-  filePath.startsWith('file://') ? filePath : `file://${filePath}`;
 
 const formatShareAmount = value => {
   const amount = Number(value) || 0;
@@ -134,13 +132,14 @@ export const generateDealSummaryPdf = async data => {
 export const shareDealSummary = async (data, title) => {
   const message = getBookingShareMessage(data);
   const {fileName, filePath} = await generateDealSummaryPdf(data);
+  const sharePath = await saveNamedCachePdf(filePath, fileName);
   const shareTitle =
     title ||
     getDealSummaryShareTitle(
       data?.guest?.name,
       data?.propertyName || data?.title,
     );
-  const pdfUrl = getFileUrl(filePath);
+  const pdfUrl = getShareFileUrl(sharePath);
 
   try {
     Clipboard.setString(message);
@@ -162,7 +161,7 @@ export const shareDealSummary = async (data, title) => {
 
   successToast('Booking message copied — paste it in the chat');
 
-  return filePath;
+  return sharePath;
 };
 
 export default shareDealSummary;

@@ -14,8 +14,8 @@ import {
   DEFAULT_SHOP_FILTERS,
   ShopFilterModal,
 } from '../../../components/modals';
-import {ScreenHeader, ShopProductCard} from '../../../components/molecules';
-import {BagIcon, CartIcon, FilterIcon} from '../../../components/svgs';
+import {CartHeaderButton, ScreenHeader, ShopProductCard} from '../../../components/molecules';
+import {BagIcon, FilterIcon} from '../../../components/svgs';
 import {makeGetHostProductCatalogRequest} from '../../../api/common';
 import {COLORS, NAVIGATION, SCREEN} from '../../../constants';
 import {
@@ -66,17 +66,9 @@ const ShopScreen = () => {
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isError, setIsError] = useState(false);
-  // Placeholder until cart API is wired.
-  const [cartItemCount] = useState(0);
 
   const isFilterApplied = useMemo(() => hasActiveFilters(filters), [filters]);
   const hasNextPage = page < totalPages;
-  const cartBadgeLabel = useMemo(() => {
-    if (cartItemCount <= 0) {
-      return '';
-    }
-    return cartItemCount > 99 ? '99+' : String(cartItemCount);
-  }, [cartItemCount]);
 
   const fetchProducts = useCallback(
     async ({
@@ -162,8 +154,8 @@ const ShopScreen = () => {
   }, []);
 
   const handleOpenCheckout = useCallback(() => {
-    // Placeholder until checkout screen is wired.
-  }, []);
+    navigation.navigate(NAVIGATION.COMMON.CART_SCREEN);
+  }, [navigation]);
 
   const handleOpenOrders = useCallback(() => {
     navigation.navigate(NAVIGATION.COMMON.ORDERS_SCREEN);
@@ -214,6 +206,7 @@ const ShopScreen = () => {
         originalPrice={item.originalPrice}
         discountPercent={item.discountPercent}
         exclGst={item.exclGst}
+        onPress={() => navigation.navigate(NAVIGATION.COMMON.SHOP_PRODUCT_DETAIL_SCREEN, {product: item})}
       />
     ),
     [],
@@ -258,24 +251,7 @@ const ShopScreen = () => {
         onBack={() => navigation.goBack()}
         rightComponent={
           <View style={styles.headerActions}>
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel={t('SHOP.CHECKOUT')}
-              onPress={handleOpenCheckout}
-              style={styles.headerIconButton}>
-              <CartIcon color={COLORS.SURFACE} size={18} />
-              {!!cartBadgeLabel && (
-                <View style={styles.cartBadge}>
-                  <StyledText
-                    color={COLORS.WHITE}
-                    size={9}
-                    variant="bold"
-                    textStyle={styles.cartBadgeText}>
-                    {cartBadgeLabel}
-                  </StyledText>
-                </View>
-              )}
-            </TouchableOpacity>
+            <CartHeaderButton onPress={handleOpenCheckout} />
             <TouchableOpacity
               accessibilityRole="button"
               accessibilityLabel={t('SHOP.ORDERS')}

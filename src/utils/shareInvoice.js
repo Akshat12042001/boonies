@@ -1,6 +1,7 @@
 import {generatePDF} from 'react-native-html-to-pdf';
 import Share from 'react-native-share';
 import createInvoiceHtml from './invoiceHtml';
+import {getShareFileUrl, saveNamedCachePdf} from './sharePdf';
 
 const getFileName = invoice => {
   const guestName = String(invoice?.to || '')
@@ -11,9 +12,6 @@ const getFileName = invoice => {
 
   return `Invoice-${safeName}`;
 };
-
-const getFileUrl = filePath =>
-  filePath.startsWith('file://') ? filePath : `file://${filePath}`;
 
 export const shareInvoice = async (invoice, title = 'Share invoice') => {
   const fileName = getFileName(invoice);
@@ -31,16 +29,18 @@ export const shareInvoice = async (invoice, title = 'Share invoice') => {
     throw new Error('Invoice PDF could not be generated');
   }
 
+  const sharePath = await saveNamedCachePdf(pdf.filePath, fileName);
+
   await Share.open({
     title,
     subject: `Invoice #${invoice?.invoiceNo || ''}`,
-    url: getFileUrl(pdf.filePath),
+    url: getShareFileUrl(sharePath),
     type: 'application/pdf',
     filename: `${fileName}.pdf`,
     failOnCancel: false,
   });
 
-  return pdf;
+  return {...pdf, filePath: sharePath};
 };
 
 export default shareInvoice;

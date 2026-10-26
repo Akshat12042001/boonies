@@ -12,6 +12,7 @@ const ScreenHeader = ({
   onBack,
   backAccessibilityLabel,
   badgeText,
+  leftComponent,
   rightComponent,
   backgroundColor = COLORS.PRIMARY_DARK,
 }) => {
@@ -37,6 +38,9 @@ const ScreenHeader = ({
             <BackIcon />
           </TouchableOpacity>
         )}
+        {leftComponent ? (
+          <View style={styles.leftComponent}>{leftComponent}</View>
+        ) : null}
         <View style={styles.textContainer}>
           <StyledText color={COLORS.SURFACE} variant="bold" size={17}>
             {title}

@@ -17,6 +17,9 @@ export default StyleSheet.create({
     justifyContent: 'center',
     width: 36,
   },
+  leftComponent: {
+    marginLeft: 8,
+  },
   textContainer: {
     flex: 1,
     marginLeft: 10,

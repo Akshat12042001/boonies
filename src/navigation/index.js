@@ -8,6 +8,7 @@ import {NAVIGATION} from '../constants';
 import BottomTabs from './bottomTabs';
 import { useSelector } from 'react-redux';
 import CommonStack from './stacks/common';
+import { FCMService } from '../services';
 
 const Stack = createStackNavigator();
 
@@ -15,6 +16,19 @@ const setNavigatorRef = ref => NavigationService.setNavigatorRef(ref);
 
 const AppNavigator = () => {
   const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
+
+
+  const onNotificationHandler = async (
+    {notification, data, userInfo},
+    openByClick = false,
+  ) => {
+    if (!openByClick) return;
+  };
+
+  const addNotificationListener = async () => {
+    FCMService.register(onNotificationHandler, onNotificationHandler, () => {});
+  };
+
   return(
     <NavigationContainer ref={setNavigatorRef}>
     <Stack.Navigator screenOptions={config}>

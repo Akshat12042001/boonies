@@ -58,3 +58,6 @@ export {default as TruckIcon} from './truckIcon';
 export {default as RupeeIcon} from './rupeeIcon';
 export {default as CheckCircleIcon} from './checkCircleIcon';
 export {default as StorefrontIcon} from './storefrontIcon';
+export {default as DealIcon} from './dealIcon';
+export {default as HourglassIcon} from './hourglassIcon';
+export {default as CloseCircleIcon} from './closeCircleIcon';

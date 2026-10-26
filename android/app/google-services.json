@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1091074030829",
+    "project_id": "boonies-5782b",
+    "storage_bucket": "boonies-5782b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1091074030829:android:fecd5d508829779c7720e4",
+        "android_client_info": {
+          "package_name": "com.app.boonies1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAtmYzE19nVPddd1jVZTx9_1TWoKOvA6DM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

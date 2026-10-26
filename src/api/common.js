@@ -15,6 +15,7 @@ const ENDPOINTS = {
   HOMESTAY_BOOKING_CALENDAR: '/bookings/homestays',
   DIRECT_BOOKING_BY_HOST: '/deals/direct-booking/by/host',
   HOST_DIRECT_BOOKINGS: '/deals/host/direct-bookings',
+  HOST_ALL_BOOKINGS: '/deals/host/all-bookings',
   HOST_BOOKINGS: '/deals/host/bookings',
   DEAL_PREVIEW: '/deals',
   NOTIFICATIONS: '/notification',
@@ -23,6 +24,7 @@ const ENDPOINTS = {
   REWARDS: '/points/me/transactions',
   REWARDS_SUMMARY: '/points/me',
   PRODUCT_CATALOG: '/products/host/catalog',
+  HOST_PRODUCT: '/products/host',
   MY_ORDERS: '/orders/my',
 };
 
@@ -297,6 +299,12 @@ export const makeGetHostDirectBookingsRequest = params => {
     .then(res => res.data);
 };
 
+export const makeGetHostAllBookingsRequest = params => {
+  return APIClient()
+    .get(ENDPOINTS.HOST_ALL_BOOKINGS, {params})
+    .then(res => res.data);
+};
+
 export const makeDeleteHostBookingRequest = bookingId => {
   return APIClient()
     .delete(`${ENDPOINTS.HOST_BOOKINGS}/${bookingId}`)
@@ -324,6 +332,12 @@ export const makeGetBookingPreviewRequest = bookingId => {
 export const makeGetHostProductCatalogRequest = params => {
   return APIClient()
     .get(ENDPOINTS.PRODUCT_CATALOG, {params})
+    .then(res => res.data);
+};
+
+export const makeGetHostProductRequest = productId => {
+  return APIClient()
+    .get(`${ENDPOINTS.HOST_PRODUCT}/${productId}`)
     .then(res => res.data);
 };
 

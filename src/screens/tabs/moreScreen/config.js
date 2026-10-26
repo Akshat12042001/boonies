@@ -1,4 +1,4 @@
-import { CalendarIcon, LogoutIcon, ShopIcon, SupportIcon } from "../../../components/svgs";
+import { CalendarIcon, LogoutIcon, ShopIcon, SupportIcon, DealIcon } from "../../../components/svgs";
 import { COLORS } from "../../../constants";
 
 const DATA = [
@@ -16,6 +16,11 @@ const DATA = [
     id: 4,
     title: 'Shop',
     icon:<ShopIcon color={COLORS.PRIMARY} size={20} />
+  },
+  {
+    id: 5,
+    title: 'Deals',
+    icon:<DealIcon color={COLORS.PRIMARY} size={20} />
   },
   {
     id: 3,

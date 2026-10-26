@@ -181,13 +181,13 @@ export const createDealSummaryHtml = data => {
           }
 
           .property-image-cell {
-            width: 168px;
-            padding-right: 16px;
+            width: 188px;
+            padding-right: 20px;
           }
 
           .property-copy-cell {
             padding-top: 2px;
-            padding-left: 2px;
+            padding-left: 0;
           }
 
           .property-image {

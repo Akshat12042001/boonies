@@ -1,10 +1,13 @@
-import React, {useCallback, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {FlatList, ScrollView, TouchableOpacity, View} from 'react-native';
 import Skeleton from 'react-native-reanimated-skeleton';
 import {useTranslation} from 'react-i18next';
 import {ScreenContainer, StyledText} from '../../../components/atoms';
 import {DeletePropertyModal} from '../../../components/modals';
-import {PROPERTY_CARD_ACTION, PropertyCard} from '../../../components/molecules';
+import {
+  PROPERTY_CARD_ACTION,
+  PropertyCard,
+} from '../../../components/molecules';
 import {
   ArrowRightIcon,
   BellIcon,
@@ -19,7 +22,10 @@ import {
 import {COLORS, NAVIGATION, SCREEN} from '../../../constants';
 import styles from './styles';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {useGetDashboardQuery, useGetNotificationsQuery} from '../../../redux/tabs/api';
+import {
+  useGetDashboardQuery,
+  useGetNotificationsQuery,
+} from '../../../redux/tabs/api';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import moment from 'moment';
@@ -29,6 +35,11 @@ import {setUserData} from '../../../redux/auth/auth.reducer';
 import {errorToast, successToast} from '../../../utils/alerts';
 import {getTimeBasedGreetingKey} from '../../../utils/greeting';
 import {formatCurrency} from '../../../utils/invoice';
+import notifee, {AuthorizationStatus} from '@notifee/react-native';
+import {getMessaging, getToken} from '@react-native-firebase/messaging';
+import {showAlert} from '../../../utils/alerts';
+import {Linking} from 'react-native';
+import DeviceInfo from 'react-native-device-info';
 
 const NOTIFICATION_QUERY = {limit: 10, page: 1};
 const POPOVER_CLOSE_DELAY_MS = 500;
@@ -101,8 +112,11 @@ const HomeScreen = () => {
   const {t} = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const {data: dashboardData, isLoading, refetch: refetchDashboard} =
-    useGetDashboardQuery();
+  const {
+    data: dashboardData,
+    isLoading,
+    refetch: refetchDashboard,
+  } = useGetDashboardQuery();
   const {data: notificationsResponse, refetch: refetchNotifications} =
     useGetNotificationsQuery(NOTIFICATION_QUERY);
   const user = useSelector(state => state.auth.user);
@@ -225,9 +239,10 @@ const HomeScreen = () => {
         Icon: UserPlusIcon,
         color: '#2F6FED',
         background: '#EAF1FF',
-        onPress: () => navigation.navigate(NAVIGATION.STACKS.COMMON,{
-          screen: NAVIGATION.COMMON.CREATE_BOOKING_SCREEN,
-        }),
+        onPress: () =>
+          navigation.navigate(NAVIGATION.STACKS.COMMON, {
+            screen: NAVIGATION.COMMON.CREATE_BOOKING_SCREEN,
+          }),
       },
     ],
     [navigation, t],
@@ -277,6 +292,36 @@ const HomeScreen = () => {
       refetchNotifications();
     }, [fetchMe, refetchDashboard, refetchNotifications]),
   );
+
+  useEffect(() => {
+    requestUserPermission();
+  }, [requestUserPermission]);
+
+  const requestUserPermission = useCallback(async () => {
+    const settings = await notifee.requestPermission();
+
+    if (settings.authorizationStatus === AuthorizationStatus.DENIED) {
+      showAlert({
+        title: 'Permission Denied',
+        message: 'Please enable notifications to receive updates',
+        onSuccess: () => {
+          Linking.openSettings();
+        },
+        isConfirmationPopup: true,
+        t,
+      });
+    } else {
+      getToken(getMessaging())
+        .then(token => {
+          console.log('FCM token:', token);
+        })
+        .catch(() => {});
+
+        DeviceInfo.getDeviceToken().then((deviceToken) => {
+          console.log('Device token:', deviceToken);
+        });
+    }
+  }, [t]);
 
   const openPropertyDetail = useCallback(
     (propertyId, isListingView = false) => {
@@ -370,13 +415,13 @@ const HomeScreen = () => {
   );
 
   const handleQuickStatPress = useCallback(
-    (id) => {
+    id => {
       switch (id) {
         case 'properties':
           navigation.navigate(NAVIGATION.TABS.PROPERTIES_SCREEN);
           break;
         case 'bookings':
-          navigation.navigate(NAVIGATION.STACKS.COMMON,{
+          navigation.navigate(NAVIGATION.STACKS.COMMON, {
             screen: NAVIGATION.COMMON.BOOKING_SCREEN,
           });
           break;
@@ -384,7 +429,7 @@ const HomeScreen = () => {
           navigation.navigate(NAVIGATION.TABS.INVOICES_SCREEN);
           break;
         case 'rewards':
-          navigation.navigate(NAVIGATION.STACKS.COMMON,{
+          navigation.navigate(NAVIGATION.STACKS.COMMON, {
             screen: NAVIGATION.COMMON.REWARDS_SCREEN,
           });
           break;
@@ -402,10 +447,11 @@ const HomeScreen = () => {
       iconColor,
       iconBackground,
       valueColor,
-      onPress
+      onPress,
     }) => (
       <TouchableOpacity style={styles.quickStatCard} onPress={onPress}>
-        <View style={[styles.quickStatIconWrap, {backgroundColor: iconBackground}]}>
+        <View
+          style={[styles.quickStatIconWrap, {backgroundColor: iconBackground}]}>
           <Icon color={iconColor} size={15} />
         </View>
         <StyledText
@@ -436,7 +482,8 @@ const HomeScreen = () => {
         activeOpacity={0.85}
         onPress={onPress}
         style={styles.manageToolCard}>
-        <View style={[styles.manageToolIconWrap, {backgroundColor: background}]}>
+        <View
+          style={[styles.manageToolIconWrap, {backgroundColor: background}]}>
           <Icon color={color} size={15} />
         </View>
         <View style={styles.manageToolCopy}>
@@ -473,9 +520,13 @@ const HomeScreen = () => {
                 {t(greetingKey, {name: user?.firstName})}
               </StyledText>
             </View>
-            <TouchableOpacity style={styles.notification} onPress={() => navigation.navigate(NAVIGATION.STACKS.COMMON,{
-              screen: NAVIGATION.COMMON.NOTIFICATION_SCREEN,
-            })}>
+            <TouchableOpacity
+              style={styles.notification}
+              onPress={() =>
+                navigation.navigate(NAVIGATION.STACKS.COMMON, {
+                  screen: NAVIGATION.COMMON.NOTIFICATION_SCREEN,
+                })
+              }>
               <BellIcon showIndicator={hasUnreadNotifications} />
             </TouchableOpacity>
           </View>
@@ -492,7 +543,10 @@ const HomeScreen = () => {
             highlightColor={COLORS.SKELETON_HIGHLIGHT}
             containerStyle={styles.statsSkeletonContainer}>
             <View style={styles.quickStatsCard}>
-              <StyledText variant="bold" size={12} textStyle={styles.quickStatsTitle}>
+              <StyledText
+                variant="bold"
+                size={12}
+                textStyle={styles.quickStatsTitle}>
                 {t('HOME.QUICK_STATS')}
               </StyledText>
 
@@ -506,7 +560,10 @@ const HomeScreen = () => {
                     ]}>
                     {row.map(stat => (
                       <View key={stat.id} style={styles.quickStatWrapper}>
-                        {renderQuickStatCard({...stat, onPress: () => handleQuickStatPress(stat.id)})}
+                        {renderQuickStatCard({
+                          ...stat,
+                          onPress: () => handleQuickStatPress(stat.id),
+                        })}
                       </View>
                     ))}
                   </View>
@@ -519,7 +576,10 @@ const HomeScreen = () => {
             <StyledText variant="bold" size={12} textStyle={styles.manageTitle}>
               {t('HOME.MANAGE_HOMESTAY.TITLE')}
             </StyledText>
-            <StyledText color={COLORS.TEXT_SECONDARY} size={11} containerStyle={styles.manageSubtitle}>
+            <StyledText
+              color={COLORS.TEXT_SECONDARY}
+              size={11}
+              containerStyle={styles.manageSubtitle}>
               {t('HOME.MANAGE_HOMESTAY.SUBTITLE')}
             </StyledText>
 
@@ -527,7 +587,10 @@ const HomeScreen = () => {
               {manageToolRows.map((row, rowIndex) => (
                 <View
                   key={`manage-row-${rowIndex}`}
-                  style={[styles.manageRow, rowIndex > 0 && styles.manageRowSpacing]}>
+                  style={[
+                    styles.manageRow,
+                    rowIndex > 0 && styles.manageRowSpacing,
+                  ]}>
                   {row.map(tool => (
                     <View key={tool.id} style={styles.manageToolWrapper}>
                       {renderManageTool(tool)}
@@ -546,7 +609,9 @@ const HomeScreen = () => {
               color={COLORS.SUCCESS}
               variant="bold"
               size={12}
-              onPress={() => navigation.navigate(NAVIGATION.TABS.PROPERTIES_SCREEN)}>
+              onPress={() =>
+                navigation.navigate(NAVIGATION.TABS.PROPERTIES_SCREEN)
+              }>
               {t('HOME.SEE_ALL')}
             </StyledText>
           </View>

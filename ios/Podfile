@@ -8,10 +8,34 @@ require Pod::Executable.execute_command('node', ['-p',
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
 
+# Firebase 27 resolves the iOS SDK with Swift Package Manager, which
+# requires dynamic frameworks. Static linkage duplicates those symbols.
 linkage = ENV['USE_FRAMEWORKS']
 if linkage != nil
   Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
   use_frameworks! :linkage => linkage.to_sym
+else
+  use_frameworks! :linkage => :dynamic
+end
+
+# GoogleMaps ships a static xcframework. CocoaPods rejects that under
+# dynamic frameworks even though the binary itself is valid.
+pre_install do |installer|
+  Pod::Installer::Xcode::TargetValidator.send(
+    :define_method,
+    :verify_no_static_framework_transitive_dependencies
+  ) {}
+
+  # react-native-maps calls GMSMapView and the other Google Maps classes.
+  # As a dynamic framework it cannot link that static binary, so keep it static
+  # and let the app target resolve the symbols.
+  installer.pod_targets.each do |pod|
+    next unless pod.name == 'react-native-maps'
+
+    def pod.build_type
+      Pod::BuildType.static_framework
+    end
+  end
 end
 
 target 'Boonies' do
@@ -36,5 +60,17 @@ target 'Boonies' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+
+    # These pods call into React but are not codegen modules, so dynamic
+    # linkage does not add -framework React. The symbols live in that binary.
+    %w[RNNotifee BVLinearGradient RNDeviceInfo].each do |pod_name|
+      installer.pods_project.targets.each do |target|
+        next unless target.name == pod_name
+
+        target.build_configurations.each do |build_config|
+          build_config.build_settings['OTHER_LDFLAGS'] = '$(inherited) -framework React'
+        end
+      end
+    end
   end
 end

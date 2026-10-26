@@ -10,3 +10,7 @@ export {default as NotificationScreen} from './notificationScreen';
 export {default as RewardsScreen} from './rewardsScreen';
 export {default as ShopScreen} from './shopScreen';
 export {default as OrdersScreen} from './ordersScreen';
+export {default as CartScreen} from './cartScreen';
+export {default as CheckoutScreen} from './checkoutScreen';
+export {default as ShopProductDetailScreen} from './shopProductDetailScreen';
+export {default as DealsScreen} from './dealsScreen';

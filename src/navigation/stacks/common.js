@@ -14,6 +14,10 @@ import {
   RewardsScreen,
   ShopScreen,
   OrdersScreen,
+  CartScreen,
+  CheckoutScreen,
+  ShopProductDetailScreen,
+  DealsScreen,
 } from '../../screens/common';
 import config from '../config';
 
@@ -69,6 +73,22 @@ export default () => {
       <Stack.Screen
         name={NAVIGATION.COMMON.ORDERS_SCREEN}
         component={OrdersScreen}
+      />
+      <Stack.Screen
+        name={NAVIGATION.COMMON.CART_SCREEN}
+        component={CartScreen}
+      />
+      <Stack.Screen
+        name={NAVIGATION.COMMON.CHECKOUT_SCREEN}
+        component={CheckoutScreen}
+      />
+      <Stack.Screen
+        name={NAVIGATION.COMMON.SHOP_PRODUCT_DETAIL_SCREEN}
+        component={ShopProductDetailScreen}
+      />
+      <Stack.Screen
+        name={NAVIGATION.COMMON.DEALS_SCREEN}
+        component={DealsScreen}
       />
       </Stack.Navigator>
   );

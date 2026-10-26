@@ -1,4 +1,6 @@
 import React, { useEffect } from 'react';
+import {View} from 'react-native';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation';
 import {getStore, getPersistor} from './src/redux/index';
@@ -36,11 +38,22 @@ const App = () => {
   };
 
   return (
+    <GestureHandlerRootView style={{flex: 1}}>
     <SafeAreaProvider>
       <AutocompleteDropdownContextProvider>
         <Provider store={store}>
           <PersistGate
-            loading={<StyledText>Loading...</StyledText>}
+            loading={
+              <View
+                style={{
+                  flex: 1,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: '#FFFFFF',
+                }}>
+                <StyledText>Loading...</StyledText>
+              </View>
+            }
             persistor={persistor}
             onBeforeLift={onBeforeLift}>
             <ToastManager
@@ -55,6 +68,7 @@ const App = () => {
         </Provider>
       </AutocompleteDropdownContextProvider>
     </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 };
 

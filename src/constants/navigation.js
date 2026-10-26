@@ -28,6 +28,10 @@ export default {
         NOTIFICATION_SCREEN: 'Common-NotificationScreen',
         REWARDS_SCREEN: 'Common-RewardsScreen',
         SHOP_SCREEN: 'Common-ShopScreen',
-        ORDERS_SCREEN: 'Common-OrdersScreen'
+        ORDERS_SCREEN: 'Common-OrdersScreen',
+        CART_SCREEN: 'Common-CartScreen',
+        CHECKOUT_SCREEN: 'Common-CheckoutScreen',
+        SHOP_PRODUCT_DETAIL_SCREEN: 'Common-ShopProductDetailScreen',
+        DEALS_SCREEN: 'Common-DealsScreen'
     }
 };

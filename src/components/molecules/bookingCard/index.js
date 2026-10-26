@@ -24,6 +24,8 @@ const BookingCard = ({
   checkOut,
   offeredPrice,
   adults = 0,
+  status,
+  menuItems = BOOKING_MENU_ITEMS,
   onPress,
   onMenuAction,
 }) => {
@@ -122,7 +124,7 @@ const BookingCard = ({
             </TouchableOpacity>
           }>
           <View style={styles.menuList}>
-            {BOOKING_MENU_ITEMS.map(item => {
+            {menuItems.map(item => {
               const iconColor = item.destructive
                 ? COLORS.INVOICE_DELETE
                 : COLORS.GREYSCALE_900;
@@ -173,6 +175,13 @@ const BookingCard = ({
             {staySummary}
           </StyledText>
         </View>
+        {status ? (
+          <View style={styles.statusBadge}>
+            <StyledText color={COLORS.INVOICE_DUE_TEXT} size={11} variant="medium">
+              {status}
+            </StyledText>
+          </View>
+        ) : null}
       </View>
     </CardWrapper>
   );

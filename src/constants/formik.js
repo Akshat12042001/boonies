@@ -486,4 +486,19 @@ export default {
         .required('CREATE_LISTING.ERRORS.CHECK_OUT_TIME_REQUIRED'),
     }),
   },
+  CHECKOUT: {
+    schema: Yup.object().shape({
+      fullName: schemas.stringRequired2,
+      phone: schemas.phoneRequired,
+      address: schemas.stringRequired2,
+      city: schemas.stringRequired2,
+      state: schemas.stringRequired2,
+      postalCode: Yup.string()
+        .trim()
+        .required('ERRORS.REQUIRED')
+        .matches(/^\d{6}$/, 'ERRORS.PINCODE_IS_NOT_VALID'),
+      landmark: schemas.stringOptional,
+      orderNotes: schemas.stringOptional,
+    }),
+  },
 };

@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import Modal from 'react-native-modal';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
-import { pick, keepLocalCopy } from '@react-native-documents/picker'
+import {pick} from '@react-native-documents/picker';
 import styles from './styles';
 import { GalleryIcon, UploadIcon} from '../../svgs';
 import {COLORS} from '../../../constants';
@@ -29,42 +29,55 @@ const PickImageBottomModal = ({
         type: data?.assets[0]?.type,
         uri: data?.assets[0]?.uri,
       };
-      onSelect(response);
-      imageDetails(data?.assets);
+      onSelect?.(response);
+      imageDetails?.(data?.assets);
     }
   };
 
   const handleCamera = async () => {
-    const response = await launchCamera({
-      mediaType: 'photo',
-      quality: 1,
-    });
-    pickCallback(response);
+    try {
+      const response = await launchCamera({
+        mediaType: 'photo',
+        quality: 1,
+      });
+      pickCallback(response);
+    } catch {
+      // The picker reports its own cancel and permission errors.
+    }
   };
 
   const handleGallery = async () => {
-    const response = await launchImageLibrary({
-      mediaType: 'photo',
-      quality: 1,
-    });
-    pickCallback(response);
+    try {
+      const response = await launchImageLibrary({
+        mediaType: 'photo',
+        quality: 1,
+      });
+      pickCallback(response);
+    } catch {
+      // The picker reports its own cancel and permission errors.
+    }
   };
 
   const handleDocumentPick = async () => {
     try {
-      const document = await pick({
-        type: 'image/jpeg',
-        copyTo: keepLocalCopy,
+      const [document] = await pick({
+        type: ['image/jpeg', 'image/png', 'image/webp'],
       });
+
+      if (!document?.uri) {
+        return;
+      }
+
       onCloseModal();
-      const response = {
-        type: document[0]?.type,
-        name: document[0]?.name,
-        uri: document[0]?.fileCopyUri,
-      };
-      imageDetails(document);
-      // onSelect(document, true);
-    } catch (err) {}
+      onSelect?.({
+        type: document.type,
+        name: document.name,
+        uri: document.uri,
+      });
+      imageDetails?.([document]);
+    } catch {
+      // Dismissing the document picker rejects the promise.
+    }
   };
 
   const BTN = [

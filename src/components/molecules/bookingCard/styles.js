@@ -41,6 +41,7 @@ export default StyleSheet.create({
     width: 28,
   },
   bookingSection: {
+    alignItems: 'center',
     flexDirection: 'row',
     marginTop: 14,
   },
@@ -57,6 +58,14 @@ export default StyleSheet.create({
   },
   staySummary: {
     lineHeight: 18,
+  },
+  statusBadge: {
+    borderColor: '#F0C2B6',
+    borderRadius: 8,
+    borderWidth: 1,
+    marginLeft: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
   popoverBackdrop: {
     backgroundColor: 'transparent',

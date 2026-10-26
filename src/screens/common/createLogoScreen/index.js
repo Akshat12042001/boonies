@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useRoute} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
 import {useDispatch, useSelector} from 'react-redux';
 import {
@@ -33,7 +33,7 @@ import {makeMeRequest} from '../../../api/auth';
 import {COLORS} from '../../../constants';
 import {setUserData} from '../../../redux/auth/auth.reducer';
 import {errorToast, successToast} from '../../../utils/alerts';
-import {getGeneratedLogoUrl} from '../../../utils/logo';
+import {getGeneratedLogoUrl, getHomestayLogoUrl} from '../../../utils/logo';
 import styles from './styles';
 
 const TABS = {
@@ -43,6 +43,7 @@ const TABS = {
 
 const CreateLogoScreen = () => {
   const navigation = useNavigation();
+  const route = useRoute();
   const dispatch = useDispatch();
   const {t} = useTranslation();
   const user = useSelector(state => state.auth.user);
@@ -58,18 +59,6 @@ const CreateLogoScreen = () => {
 
   const currentLogoUrl = user?.homestayLogo || '';
 
-  const refreshUserData = useCallback(async () => {
-    const userResponse = await makeMeRequest();
-
-    dispatch(
-      setUserData({
-        ...userResponse,
-        accessToken: user?.accessToken,
-        refreshToken: user?.refreshToken,
-      }),
-    );
-  }, [dispatch, user?.accessToken, user?.refreshToken]);
-
   const clearLocalStates = useCallback(({keepGeneratedLogo = false} = {}) => {
     setSelectedLogo(null);
     setHomestayName('');
@@ -80,6 +69,13 @@ const CreateLogoScreen = () => {
       setGeneratedLogo(null);
     }
   }, []);
+
+  const notifyLogoUpdated = useCallback(
+    logoUrl => {
+      route.params?.onLogoUpdated?.(logoUrl);
+    },
+    [route.params?.onLogoUpdated],
+  );
 
   const handleBack = useCallback(() => {
     navigation.goBack();
@@ -107,15 +103,39 @@ const CreateLogoScreen = () => {
     try {
       setIsSubmittingLogo(true);
       const response = await makeUploadLogoRequest(selectedLogo);
-      await refreshUserData();
+      const userResponse = await makeMeRequest();
+      const remoteLogoUrl =
+        getHomestayLogoUrl(userResponse) || getGeneratedLogoUrl(response);
+
+      dispatch(
+        setUserData({
+          ...userResponse,
+          homestayLogo: remoteLogoUrl || user?.homestayLogo,
+          accessToken: user?.accessToken,
+          refreshToken: user?.refreshToken,
+        }),
+      );
       clearLocalStates();
       successToast(response?.message || t('CREATE_LOGO.UPLOAD_SUCCESS'));
+      notifyLogoUpdated({
+        remoteUrl: remoteLogoUrl,
+        previewUrl: selectedLogo.uri,
+      });
     } catch {
       // APIClient displays the server error toast.
     } finally {
       setIsSubmittingLogo(false);
     }
-  }, [clearLocalStates, refreshUserData, selectedLogo, t]);
+  }, [
+    clearLocalStates,
+    dispatch,
+    notifyLogoUpdated,
+    selectedLogo,
+    t,
+    user?.accessToken,
+    user?.homestayLogo,
+    user?.refreshToken,
+  ]);
 
   const canCreateLogo =
     homestayName.trim().length > 0 && logoDescription.trim().length > 0;
@@ -177,15 +197,37 @@ const CreateLogoScreen = () => {
       const response = await makeUpdateGeneratedLogoRequest({
         url: generatedLogo.url,
       });
-      await refreshUserData();
+      const userResponse = await makeMeRequest();
+      const remoteLogoUrl =
+        getHomestayLogoUrl(userResponse) || generatedLogo.url;
+
+      dispatch(
+        setUserData({
+          ...userResponse,
+          homestayLogo: remoteLogoUrl || user?.homestayLogo,
+          accessToken: user?.accessToken,
+          refreshToken: user?.refreshToken,
+        }),
+      );
       clearLocalStates();
       successToast(response?.message || t('CREATE_LOGO.ACTIVATE_SUCCESS'));
+      notifyLogoUpdated({remoteUrl: remoteLogoUrl});
     } catch {
       // APIClient displays the server error toast.
     } finally {
       setIsActivatingLogo(false);
     }
-  }, [clearLocalStates, generatedLogo, isActivatingLogo, refreshUserData, t]);
+  }, [
+    clearLocalStates,
+    dispatch,
+    generatedLogo,
+    isActivatingLogo,
+    notifyLogoUpdated,
+    t,
+    user?.accessToken,
+    user?.homestayLogo,
+    user?.refreshToken,
+  ]);
 
   const renderTab = useCallback(
     (tab, label) => {

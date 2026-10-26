@@ -1,15 +1,19 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {useFormikContext} from 'formik';
 import {
   ActivityIndicator,
+  findNodeHandle,
   Image,
+  InteractionManager,
   ScrollView,
   TouchableOpacity,
   View,
 } from 'react-native';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
-import {useNavigation, useRoute} from '@react-navigation/native';
+import {useFocusEffect, useNavigation, useRoute} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useTranslation} from 'react-i18next';
+import {useDispatch, useSelector} from 'react-redux';
 import {Formik} from 'formik';
 import {Input, ScreenContainer, StyledText} from '../../../components/atoms';
 import {
@@ -20,14 +24,49 @@ import {ChevronRightIcon, LoginEyeIcon} from '../../../components/svgs';
 import {MenuPdfPreviewModal} from '../../../components/modals';
 import {
   makeCreateFoodMenuRequest,
+  makeGetFoodMenuRequest,
   makeGetSingleFoodMenuRequest,
   makeUpdateFoodMenuRequest,
 } from '../../../api/common';
+import {tabsApi} from '../../../redux/tabs/api';
 import {ASSETS, COLORS, FORM_SCHEMA, NAVIGATION} from '../../../constants';
 import {buildMenuPayload, formatMenuDetails} from '../../../utils/menu';
+import {getHomestayLogoUrl} from '../../../utils/logo';
 import {createMenuPdfFile} from '../../../utils/menuPdf';
 import {errorToast, successToast} from '../../../utils/alerts';
 import styles from './styles';
+
+const VALIDATION_FIELD_ORDER = [
+  'selectedTemplate',
+  'menuName',
+  'tagline',
+  'ordersPhone',
+  'kitchenHours',
+  'categories',
+];
+
+const hasFieldError = error => {
+  if (!error) {
+    return false;
+  }
+
+  if (typeof error === 'string') {
+    return true;
+  }
+
+  if (Array.isArray(error)) {
+    return error.some(hasFieldError);
+  }
+
+  if (typeof error === 'object') {
+    return Object.values(error).some(hasFieldError);
+  }
+
+  return false;
+};
+
+const getFirstErrorField = formErrors =>
+  VALIDATION_FIELD_ORDER.find(fieldKey => hasFieldError(formErrors?.[fieldKey]));
 
 const TEMPLATES = [
   {id: 'classic', translationKey: 'CLASSIC', image: ASSETS.IMAGES.CLASSIC},
@@ -36,6 +75,50 @@ const TEMPLATES = [
   {id: 'minimal', translationKey: 'MINIMAL', image: ASSETS.IMAGES.MINIMAL},
   {id: 'essential', translationKey: 'ESSENTIAL', image: ASSETS.IMAGES.ESSENTIAL},
 ];
+
+const stripLogoVersion = url => String(url || '').replace(/([?&])v=\d+$/, '');
+
+const withLogoVersion = (url, version) => {
+  if (!url || !version) {
+    return url;
+  }
+
+  const baseUrl = stripLogoVersion(url);
+  const separator = baseUrl.includes('?') ? '&' : '?';
+
+  return `${baseUrl}${separator}v=${version}`;
+};
+
+const HomestayLogoPrefill = ({logoUrl, refreshKey}) => {
+  const {values, setFieldValue} = useFormikContext();
+  const previousHomestayLogo = useRef(logoUrl);
+
+  useEffect(() => {
+    if (!logoUrl) {
+      return;
+    }
+
+    const previousLogo = previousHomestayLogo.current;
+    previousHomestayLogo.current = logoUrl;
+    const currentLogo = stripLogoVersion(values.logoUrl);
+    const showingHomestayLogo =
+      !currentLogo ||
+      currentLogo === stripLogoVersion(previousLogo) ||
+      currentLogo === stripLogoVersion(logoUrl);
+
+    if (!showingHomestayLogo && !refreshKey) {
+      return;
+    }
+
+    const nextLogoUrl = refreshKey ? withLogoVersion(logoUrl, refreshKey) : logoUrl;
+
+    if (values.logoUrl !== nextLogoUrl) {
+      setFieldValue('logoUrl', nextLogoUrl, false);
+    }
+  }, [logoUrl, refreshKey, setFieldValue, values.logoUrl]);
+
+  return null;
+};
 
 const EMPTY_VALUES = {
   selectedTemplate: '',
@@ -50,9 +133,14 @@ const EMPTY_VALUES = {
 const CreateMenuScreen = () => {
   const {t} = useTranslation();
   const navigation = useNavigation();
+  const dispatch = useDispatch();
   const route = useRoute();
   const routeMenuId = route.params?.menuId;
   const insets = useSafeAreaInsets();
+  const user = useSelector(state => state.auth.user);
+  const homestayLogoUrl = getHomestayLogoUrl(user);
+  const homestayLogoUrlRef = useRef(homestayLogoUrl);
+  homestayLogoUrlRef.current = homestayLogoUrl;
   const menuForm = FORM_SCHEMA.CREATE_MENU;
   const [editingMenuId, setEditingMenuId] = useState(routeMenuId || '');
   const [initialValues, setInitialValues] = useState(EMPTY_VALUES);
@@ -62,6 +150,10 @@ const CreateMenuScreen = () => {
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
   const [previewPdfPath, setPreviewPdfPath] = useState('');
   const [previewTitle, setPreviewTitle] = useState('');
+  const [logoRefreshKey, setLogoRefreshKey] = useState(0);
+  const openedLogoScreenRef = useRef(false);
+  const scrollRef = useRef(null);
+  const fieldRefs = useRef({});
 
   useEffect(() => {
     if (routeMenuId) {
@@ -71,7 +163,10 @@ const CreateMenuScreen = () => {
 
   useEffect(() => {
     if (!routeMenuId) {
-      setInitialValues(EMPTY_VALUES);
+      setInitialValues({
+        ...EMPTY_VALUES,
+        logoUrl: homestayLogoUrlRef.current,
+      });
       return undefined;
     }
 
@@ -94,7 +189,7 @@ const CreateMenuScreen = () => {
           tagline: details.tagline || '',
           ordersPhone: details.phoneNumber || '',
           kitchenHours: details.kitchenTiming || '',
-          logoUrl: details.logoUrl || '',
+          logoUrl: details.logoUrl || homestayLogoUrlRef.current,
           categories: details.categories || [],
         });
       } catch {
@@ -124,8 +219,22 @@ const CreateMenuScreen = () => {
   }, []);
 
   const handleSelectLogo = useCallback(() => {
+    openedLogoScreenRef.current = true;
     navigation.navigate(NAVIGATION.COMMON.CREATE_LOGO_SCREEN);
   }, [navigation]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!openedLogoScreenRef.current) {
+        return undefined;
+      }
+
+      openedLogoScreenRef.current = false;
+      setLogoRefreshKey(Date.now());
+
+      return undefined;
+    }, []),
+  );
 
   const buildPayloadFromValues = useCallback(
     values =>
@@ -148,6 +257,15 @@ const CreateMenuScreen = () => {
         const response = editingMenuId
           ? await makeUpdateFoodMenuRequest(editingMenuId, menuPayload)
           : await makeCreateFoodMenuRequest(menuPayload);
+        const menusResponse = await makeGetFoodMenuRequest();
+
+        dispatch(
+          tabsApi.util.upsertQueryData(
+            'getFoodMenu',
+            undefined,
+            menusResponse,
+          ),
+        );
         successToast(
           response?.message ||
             t(
@@ -163,7 +281,7 @@ const CreateMenuScreen = () => {
         setIsSaving(false);
       }
     },
-    [buildPayloadFromValues, editingMenuId, navigation, t],
+    [buildPayloadFromValues, dispatch, editingMenuId, navigation, t],
   );
 
   return (
@@ -249,17 +367,61 @@ const CreateMenuScreen = () => {
             setFieldTouched('categories', true, false);
           };
 
-          const handleSavePress = () => {
-            setFieldTouched('selectedTemplate', true, false);
-            setFieldTouched('menuName', true, false);
-            setFieldTouched('ordersPhone', true, false);
-            setFieldTouched('kitchenHours', true, false);
-            setFieldTouched('categories', true, false);
+          const scrollToField = fieldKey => {
+            const target = fieldRefs.current[fieldKey];
+            const node = target ? findNodeHandle(target) : null;
+
+            if (!node) {
+              return;
+            }
+
+            InteractionManager.runAfterInteractions(() => {
+              requestAnimationFrame(() => {
+                if (scrollRef.current?.scrollToFocusedInput) {
+                  scrollRef.current.scrollToFocusedInput(node, 140, 50);
+                  return;
+                }
+
+                target.measureLayout?.(
+                  findNodeHandle(scrollRef.current),
+                  (_x, y) => {
+                    scrollRef.current?.scrollTo?.({
+                      y: Math.max(0, y - 24),
+                      animated: true,
+                    });
+                  },
+                  () => {},
+                );
+              });
+            });
+          };
+
+          const handleSavePress = async () => {
+            if (isSaving) {
+              return;
+            }
+
+            VALIDATION_FIELD_ORDER.forEach(fieldKey => {
+              setFieldTouched(fieldKey, true, false);
+            });
+
+            const formErrors = await validateForm();
+            const firstErrorField = getFirstErrorField(formErrors);
+
+            if (firstErrorField) {
+              scrollToField(firstErrorField);
+              return;
+            }
+
             submitForm();
           };
 
           return (
             <>
+              <HomestayLogoPrefill
+                logoUrl={homestayLogoUrl}
+                refreshKey={logoRefreshKey}
+              />
               <ScreenHeader
                 title={
                   values.menuName ||
@@ -290,6 +452,7 @@ const CreateMenuScreen = () => {
 
               <View style={styles.flex}>
                 <KeyboardAwareScrollView
+                  ref={scrollRef}
                   enableOnAndroid
                   enableAutomaticScroll
                   enableResetScrollToCoords={false}
@@ -297,7 +460,11 @@ const CreateMenuScreen = () => {
                   keyboardShouldPersistTaps="handled"
                   contentContainerStyle={styles.scrollContent}
                   showsVerticalScrollIndicator={false}>
-                  <View style={styles.templateSection}>
+                  <View
+                    ref={ref => {
+                      fieldRefs.current.selectedTemplate = ref;
+                    }}
+                    style={styles.templateSection}>
                     <View style={styles.templateHeader}>
                       <StyledText variant="bold" size={15}>
                         {t('CREATE_MENU.TEMPLATE')}
@@ -357,6 +524,7 @@ const CreateMenuScreen = () => {
                       <View style={styles.logoPlaceholder}>
                         {values.logoUrl ? (
                           <Image
+                            key={values.logoUrl}
                             source={{uri: values.logoUrl}}
                             style={styles.logoImage}
                             resizeMode="cover"
@@ -389,6 +557,10 @@ const CreateMenuScreen = () => {
                       <ChevronRightIcon color={COLORS.TEXT_MUTED} />
                     </TouchableOpacity>
 
+                    <View
+                      ref={ref => {
+                        fieldRefs.current.menuName = ref;
+                      }}>
                     <Input
                       label={t('CREATE_MENU.MENU_NAME')}
                       value={values.menuName}
@@ -399,7 +571,12 @@ const CreateMenuScreen = () => {
                       borderColor={COLORS.INVOICE_FORM_FIELD_BORDER}
                       focusedBorderColor={COLORS.LOGIN_PRIMARY}
                     />
+                    </View>
 
+                    <View
+                      ref={ref => {
+                        fieldRefs.current.tagline = ref;
+                      }}>
                     <Input
                       label={t('CREATE_MENU.TAGLINE')}
                       value={values.tagline}
@@ -410,8 +587,14 @@ const CreateMenuScreen = () => {
                       borderColor={COLORS.INVOICE_FORM_FIELD_BORDER}
                       focusedBorderColor={COLORS.LOGIN_PRIMARY}
                     />
+                    </View>
 
                     <View style={styles.fieldsRow}>
+                      <View
+                        ref={ref => {
+                          fieldRefs.current.ordersPhone = ref;
+                        }}
+                        style={styles.halfField}>
                       <Input
                         label={t('CREATE_MENU.ORDERS_PHONE')}
                         value={values.ordersPhone}
@@ -421,10 +604,16 @@ const CreateMenuScreen = () => {
                         maxLength={10}
                         placeholder={t('CREATE_MENU.ORDERS_PHONE_PLACEHOLDER')}
                         error={touched.ordersPhone && errors.ordersPhone}
-                        containerStyles={[styles.halfField, styles.lastField]}
+                        containerStyles={styles.lastField}
                         borderColor={COLORS.INVOICE_FORM_FIELD_BORDER}
                         focusedBorderColor={COLORS.LOGIN_PRIMARY}
                       />
+                      </View>
+                      <View
+                        ref={ref => {
+                          fieldRefs.current.kitchenHours = ref;
+                        }}
+                        style={styles.halfField}>
                       <Input
                         label={t('CREATE_MENU.KITCHEN_HOURS')}
                         value={values.kitchenHours}
@@ -432,17 +621,23 @@ const CreateMenuScreen = () => {
                         onChangeText={handleChange('kitchenHours')}
                         placeholder={t('CREATE_MENU.KITCHEN_HOURS_PLACEHOLDER')}
                         error={touched.kitchenHours && errors.kitchenHours}
-                        containerStyles={[styles.halfField, styles.lastField]}
+                        containerStyles={styles.lastField}
                         borderColor={COLORS.INVOICE_FORM_FIELD_BORDER}
                         focusedBorderColor={COLORS.LOGIN_PRIMARY}
                       />
+                      </View>
                     </View>
                   </View>
 
-                  <MenuCategoriesSection
-                    categories={values.categories}
-                    onCategoriesChange={handleCategoriesChange}
-                  />
+                  <View
+                    ref={ref => {
+                      fieldRefs.current.categories = ref;
+                    }}>
+                    <MenuCategoriesSection
+                      categories={values.categories}
+                      onCategoriesChange={handleCategoriesChange}
+                    />
+                  </View>
                   {!!touched.categories && !!errors.categories && (
                     <StyledText
                       color={COLORS.RED_ERROR}
