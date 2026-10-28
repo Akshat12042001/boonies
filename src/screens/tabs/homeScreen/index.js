@@ -9,6 +9,10 @@ import {
   PropertyCard,
 } from '../../../components/molecules';
 import {
+  PROPERTY_CARD_ITEMS,
+  PROPERTY_CARD_PREVIEW_ITEMS,
+} from '../../../components/molecules/propertyCard/config';
+import {
   ArrowRightIcon,
   BellIcon,
   BrushIcon,
@@ -22,10 +26,7 @@ import {
 import {COLORS, NAVIGATION, SCREEN} from '../../../constants';
 import styles from './styles';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {
-  useGetDashboardQuery,
-  useGetNotificationsQuery,
-} from '../../../redux/tabs/api';
+import {useGetNotificationsQuery} from '../../../redux/tabs/api';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import moment from 'moment';
@@ -35,6 +36,13 @@ import {setUserData} from '../../../redux/auth/auth.reducer';
 import {errorToast, successToast} from '../../../utils/alerts';
 import {getTimeBasedGreetingKey} from '../../../utils/greeting';
 import {formatCurrency} from '../../../utils/invoice';
+import {
+  chunkPairs,
+  hasAnyStaffModule,
+  hasStaffModule,
+  isStaffUser,
+  STAFF_MODULE,
+} from '../../../utils/staff';
 import notifee, {AuthorizationStatus} from '@notifee/react-native';
 import {getMessaging, getToken} from '@react-native-firebase/messaging';
 import {showAlert} from '../../../utils/alerts';
@@ -112,22 +120,19 @@ const HomeScreen = () => {
   const {t} = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const {
-    data: dashboardData,
-    isLoading,
-    refetch: refetchDashboard,
-  } = useGetDashboardQuery();
   const {data: notificationsResponse, refetch: refetchNotifications} =
     useGetNotificationsQuery(NOTIFICATION_QUERY);
   const user = useSelector(state => state.auth.user);
   const dispatch = useDispatch();
   const userRef = useRef(user);
   userRef.current = user;
-  const recentProperties = dashboardData?.recentProperties || [];
+  const recentProperties = user?.recentProperties || [];
   const [greetingKey, setGreetingKey] = useState(getTimeBasedGreetingKey);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deletingPropertyId, setDeletingPropertyId] = useState(null);
-  const [isMeLoading, setIsMeLoading] = useState(() => !user?.quickStats);
+  const [isMeLoading, setIsMeLoading] = useState(
+    () => !user?.quickStats || !user?.recentProperties,
+  );
 
   const quickStats = user?.quickStats || {};
   const hasUnreadNotifications = useMemo(
@@ -137,6 +142,23 @@ const HomeScreen = () => {
       ),
     [notificationsResponse],
   );
+
+  const canViewListings = hasStaffModule(user, STAFF_MODULE.LISTINGS);
+  const canViewBills = hasStaffModule(user, STAFF_MODULE.BILLS);
+  const canViewBookings = hasAnyStaffModule(user, [
+    STAFF_MODULE.CALENDAR,
+    STAFF_MODULE.DIRECT_BOOKINGS,
+  ]);
+  const canManageLogo = hasStaffModule(user, STAFF_MODULE.LOGO);
+  const canManageMenu = hasStaffModule(user, STAFF_MODULE.FOOD_MENU);
+  const canManageDirectBookings = hasStaffModule(
+    user,
+    STAFF_MODULE.DIRECT_BOOKINGS,
+  );
+  const canOpenRewards = !isStaffUser(user);
+  const propertyMenuItems = canViewListings
+    ? PROPERTY_CARD_ITEMS
+    : PROPERTY_CARD_PREVIEW_ITEMS;
 
   const quickStatsData = useMemo(
     () => [
@@ -149,6 +171,7 @@ const HomeScreen = () => {
         iconColor: COLORS.LOGIN_PRIMARY,
         iconBackground: '#EDF4EF',
         valueColor: COLORS.LOGIN_PRIMARY,
+        disabled: !canViewListings,
       },
       {
         id: 'bookings',
@@ -159,6 +182,7 @@ const HomeScreen = () => {
         iconColor: '#2F6FED',
         iconBackground: '#EAF1FF',
         valueColor: '#2F6FED',
+        disabled: !canViewBookings,
       },
       {
         id: 'bills',
@@ -175,6 +199,7 @@ const HomeScreen = () => {
         iconColor: '#D46D58',
         iconBackground: '#FDEFEA',
         valueColor: '#D46D58',
+        disabled: !canViewBills,
       },
       {
         id: 'rewards',
@@ -190,19 +215,29 @@ const HomeScreen = () => {
         iconColor: '#C9A227',
         iconBackground: '#FBF4DF',
         valueColor: '#C9A227',
+        disabled: !canOpenRewards,
       },
     ],
-    [quickStats, t],
+    [
+      canOpenRewards,
+      canViewBills,
+      canViewBookings,
+      canViewListings,
+      quickStats,
+      t,
+    ],
   );
 
   const quickStatRows = useMemo(
-    () => [quickStatsData.slice(0, 2), quickStatsData.slice(2, 4)],
+    () => chunkPairs(quickStatsData),
     [quickStatsData],
   );
 
-  const manageTools = useMemo(
-    () => [
-      {
+  const manageTools = useMemo(() => {
+    const tools = [];
+
+    if (canManageLogo) {
+      tools.push({
         id: 'logo',
         title: t('HOME.MANAGE_HOMESTAY.LOGO_TITLE'),
         description: t('HOME.MANAGE_HOMESTAY.LOGO_DESC'),
@@ -213,8 +248,11 @@ const HomeScreen = () => {
           navigation.navigate(NAVIGATION.STACKS.COMMON, {
             screen: NAVIGATION.COMMON.CREATE_LOGO_SCREEN,
           }),
-      },
-      {
+      });
+    }
+
+    if (canManageMenu) {
+      tools.push({
         id: 'menu',
         title: t('HOME.MANAGE_HOMESTAY.MENU_TITLE'),
         description: t('HOME.MANAGE_HOMESTAY.MENU_DESC'),
@@ -222,8 +260,11 @@ const HomeScreen = () => {
         color: COLORS.LOGIN_PRIMARY,
         background: '#EDF4EF',
         onPress: () => navigation.navigate(NAVIGATION.TABS.MENU_SCREEN),
-      },
-      {
+      });
+    }
+
+    if (canViewBills) {
+      tools.push({
         id: 'bills',
         title: t('HOME.MANAGE_HOMESTAY.BILLS_TITLE'),
         description: t('HOME.MANAGE_HOMESTAY.BILLS_DESC'),
@@ -231,8 +272,11 @@ const HomeScreen = () => {
         color: '#E07A4F',
         background: '#FDEFEA',
         onPress: () => navigation.navigate(NAVIGATION.TABS.INVOICES_SCREEN),
-      },
-      {
+      });
+    }
+
+    if (canManageDirectBookings) {
+      tools.push({
         id: 'bookings',
         title: t('HOME.MANAGE_HOMESTAY.BOOKINGS_TITLE'),
         description: t('HOME.MANAGE_HOMESTAY.BOOKINGS_DESC'),
@@ -243,13 +287,21 @@ const HomeScreen = () => {
           navigation.navigate(NAVIGATION.STACKS.COMMON, {
             screen: NAVIGATION.COMMON.CREATE_BOOKING_SCREEN,
           }),
-      },
-    ],
-    [navigation, t],
-  );
+      });
+    }
+
+    return tools;
+  }, [
+    canManageDirectBookings,
+    canManageLogo,
+    canManageMenu,
+    canViewBills,
+    navigation,
+    t,
+  ]);
 
   const manageToolRows = useMemo(
-    () => [manageTools.slice(0, 2), manageTools.slice(2, 4)],
+    () => chunkPairs(manageTools),
     [manageTools],
   );
 
@@ -265,13 +317,14 @@ const HomeScreen = () => {
     }
 
     try {
-      if (!currentUser?.quickStats) {
+      if (!currentUser?.quickStats || !currentUser?.recentProperties) {
         setIsMeLoading(true);
       }
 
       const response = await makeMeRequest();
       dispatch(
         setUserData({
+          ...currentUser,
           ...response,
           accessToken: currentUser.accessToken,
           refreshToken: currentUser.refreshToken,
@@ -288,9 +341,8 @@ const HomeScreen = () => {
     useCallback(() => {
       setGreetingKey(getTimeBasedGreetingKey());
       fetchMe();
-      refetchDashboard();
       refetchNotifications();
-    }, [fetchMe, refetchDashboard, refetchNotifications]),
+    }, [fetchMe, refetchNotifications]),
   );
 
   useEffect(() => {
@@ -298,7 +350,8 @@ const HomeScreen = () => {
   }, [requestUserPermission]);
 
   const requestUserPermission = useCallback(async () => {
-    const settings = await notifee.requestPermission();
+    try {
+      const settings = await notifee.requestPermission();
 
     if (settings.authorizationStatus === AuthorizationStatus.DENIED) {
       showAlert({
@@ -321,6 +374,10 @@ const HomeScreen = () => {
           console.log('Device token:', deviceToken);
         });
     }
+    } catch (error) {
+      console.log({error});
+    }
+    
   }, [t]);
 
   const openPropertyDetail = useCallback(
@@ -352,7 +409,7 @@ const HomeScreen = () => {
       const response = await makeDeleteHomestayRequest(propertyId);
       successToast(response?.message || t('PROPERTIES.DELETE_SUCCESS'));
       setDeleteTarget(null);
-      refetchDashboard();
+      fetchMe();
     } catch (error) {
       if (!error?.response?.data?.message) {
         errorToast(t('PROPERTIES.DELETE_FAILED'));
@@ -360,12 +417,16 @@ const HomeScreen = () => {
     } finally {
       setDeletingPropertyId(null);
     }
-  }, [deleteTarget?.id, deletingPropertyId, refetchDashboard, t]);
+  }, [deleteTarget?.id, deletingPropertyId, fetchMe, t]);
 
   const handlePropertyMenuAction = useCallback(
     (action, propertyId) => {
       if (action === PROPERTY_CARD_ACTION.PREVIEW) {
         openPropertyDetail(propertyId);
+        return;
+      }
+
+      if (!canViewListings) {
         return;
       }
 
@@ -394,7 +455,7 @@ const HomeScreen = () => {
         });
       }, POPOVER_CLOSE_DELAY_MS);
     },
-    [navigation, openPropertyDetail, recentProperties],
+    [canViewListings, navigation, openPropertyDetail, recentProperties],
   );
 
   const renderProperty = useCallback(
@@ -407,18 +468,25 @@ const HomeScreen = () => {
         totalBedrooms={item.totalBedrooms}
         imageUrl={item.primaryImageUrl}
         placeholder={t('HOME.PROPERTY_PHOTO')}
+        menuItems={propertyMenuItems}
         onPress={() => openPropertyDetail(item.id)}
         onMenuAction={handlePropertyMenuAction}
       />
     ),
-    [handlePropertyMenuAction, openPropertyDetail, t],
+    [handlePropertyMenuAction, openPropertyDetail, propertyMenuItems, t],
   );
 
   const handleQuickStatPress = useCallback(
-    id => {
+    (id, disabled) => {
+      if (disabled) {
+        return;
+      }
+
       switch (id) {
         case 'properties':
-          navigation.navigate(NAVIGATION.TABS.PROPERTIES_SCREEN);
+          navigation.navigate(NAVIGATION.STACKS.COMMON, {
+            screen: NAVIGATION.COMMON.PROPERTIES_COMMON_SCREEN,
+          });
           break;
         case 'bookings':
           navigation.navigate(NAVIGATION.STACKS.COMMON, {
@@ -447,9 +515,17 @@ const HomeScreen = () => {
       iconColor,
       iconBackground,
       valueColor,
+      disabled,
       onPress,
     }) => (
-      <TouchableOpacity style={styles.quickStatCard} onPress={onPress}>
+      <TouchableOpacity
+        disabled={disabled}
+        activeOpacity={disabled ? 1 : 0.7}
+        style={[
+          styles.quickStatCard,
+          disabled && styles.quickStatCardDisabled,
+        ]}
+        onPress={onPress}>
         <View
           style={[styles.quickStatIconWrap, {backgroundColor: iconBackground}]}>
           <Icon color={iconColor} size={15} />
@@ -562,7 +638,8 @@ const HomeScreen = () => {
                       <View key={stat.id} style={styles.quickStatWrapper}>
                         {renderQuickStatCard({
                           ...stat,
-                          onPress: () => handleQuickStatPress(stat.id),
+                          onPress: () =>
+                            handleQuickStatPress(stat.id, stat.disabled),
                         })}
                       </View>
                     ))}
@@ -572,34 +649,39 @@ const HomeScreen = () => {
             </View>
           </Skeleton>
 
-          <View style={styles.manageSection}>
-            <StyledText variant="bold" size={12} textStyle={styles.manageTitle}>
-              {t('HOME.MANAGE_HOMESTAY.TITLE')}
-            </StyledText>
-            <StyledText
-              color={COLORS.TEXT_SECONDARY}
-              size={11}
-              containerStyle={styles.manageSubtitle}>
-              {t('HOME.MANAGE_HOMESTAY.SUBTITLE')}
-            </StyledText>
+          {manageTools.length ? (
+            <View style={styles.manageSection}>
+              <StyledText
+                variant="bold"
+                size={12}
+                textStyle={styles.manageTitle}>
+                {t('HOME.MANAGE_HOMESTAY.TITLE')}
+              </StyledText>
+              <StyledText
+                color={COLORS.TEXT_SECONDARY}
+                size={11}
+                containerStyle={styles.manageSubtitle}>
+                {t('HOME.MANAGE_HOMESTAY.SUBTITLE')}
+              </StyledText>
 
-            <View style={styles.manageGrid}>
-              {manageToolRows.map((row, rowIndex) => (
-                <View
-                  key={`manage-row-${rowIndex}`}
-                  style={[
-                    styles.manageRow,
-                    rowIndex > 0 && styles.manageRowSpacing,
-                  ]}>
-                  {row.map(tool => (
-                    <View key={tool.id} style={styles.manageToolWrapper}>
-                      {renderManageTool(tool)}
-                    </View>
-                  ))}
-                </View>
-              ))}
+              <View style={styles.manageGrid}>
+                {manageToolRows.map((row, rowIndex) => (
+                  <View
+                    key={`manage-row-${rowIndex}`}
+                    style={[
+                      styles.manageRow,
+                      rowIndex > 0 && styles.manageRowSpacing,
+                    ]}>
+                    {row.map(tool => (
+                      <View key={tool.id} style={styles.manageToolWrapper}>
+                        {renderManageTool(tool)}
+                      </View>
+                    ))}
+                  </View>
+                ))}
+              </View>
             </View>
-          </View>
+          ) : null}
 
           <View style={styles.sectionHeader}>
             <StyledText variant="bold" size={18}>
@@ -609,15 +691,21 @@ const HomeScreen = () => {
               color={COLORS.SUCCESS}
               variant="bold"
               size={12}
-              onPress={() =>
-                navigation.navigate(NAVIGATION.TABS.PROPERTIES_SCREEN)
+              containerStyle={!canViewListings && styles.seeAllDisabled}
+              onPress={
+                canViewListings
+                  ? () =>
+                      navigation.navigate(NAVIGATION.STACKS.COMMON, {
+                        screen: NAVIGATION.COMMON.PROPERTIES_COMMON_SCREEN,
+                      })
+                  : undefined
               }>
               {t('HOME.SEE_ALL')}
             </StyledText>
           </View>
 
           <Skeleton
-            isLoading={isLoading}
+            isLoading={isMeLoading}
             layout={PROPERTIES_SKELETON_LAYOUT}
             boneColor={COLORS.SKELETON_BONE}
             highlightColor={COLORS.SKELETON_HIGHLIGHT}

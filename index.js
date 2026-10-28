@@ -23,6 +23,7 @@ if (__DEV__) {
 const messaging = getMessaging();
 
 const showRemoteNotification = async remoteMessage => {
+  console.log('Remote message:', remoteMessage);
   const notification = remoteMessage?.notification;
   if (!notification) {
     return;

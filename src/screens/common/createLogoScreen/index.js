@@ -1,4 +1,4 @@
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -34,6 +34,7 @@ import {COLORS} from '../../../constants';
 import {setUserData} from '../../../redux/auth/auth.reducer';
 import {errorToast, successToast} from '../../../utils/alerts';
 import {getGeneratedLogoUrl, getHomestayLogoUrl} from '../../../utils/logo';
+import {hasStaffModule, STAFF_MODULE} from '../../../utils/staff';
 import styles from './styles';
 
 const TABS = {
@@ -47,6 +48,7 @@ const CreateLogoScreen = () => {
   const dispatch = useDispatch();
   const {t} = useTranslation();
   const user = useSelector(state => state.auth.user);
+  const canManageLogo = hasStaffModule(user, STAFF_MODULE.LOGO);
   const [activeTab, setActiveTab] = useState(TABS.UPLOAD);
   const [selectedLogo, setSelectedLogo] = useState(null);
   const [isPickImageVisible, setIsPickImageVisible] = useState(false);
@@ -58,6 +60,15 @@ const CreateLogoScreen = () => {
   const [isActivatingLogo, setIsActivatingLogo] = useState(false);
 
   const currentLogoUrl = user?.homestayLogo || '';
+
+  useEffect(() => {
+    if (canManageLogo) {
+      return;
+    }
+
+    errorToast(t('CREATE_MENU.LOGO_PERMISSION_DENIED'));
+    navigation.goBack();
+  }, [canManageLogo, navigation, t]);
 
   const clearLocalStates = useCallback(({keepGeneratedLogo = false} = {}) => {
     setSelectedLogo(null);
@@ -82,8 +93,12 @@ const CreateLogoScreen = () => {
   }, [navigation]);
 
   const handleChooseLogo = useCallback(() => {
+    if (!canManageLogo) {
+      errorToast(t('CREATE_MENU.LOGO_PERMISSION_DENIED'));
+      return;
+    }
     setIsPickImageVisible(true);
-  }, []);
+  }, [canManageLogo, t]);
 
   const handleClosePickImage = useCallback(() => {
     setIsPickImageVisible(false);
@@ -96,6 +111,11 @@ const CreateLogoScreen = () => {
   }, []);
 
   const handleSubmitLogo = useCallback(async () => {
+    if (!canManageLogo) {
+      errorToast(t('CREATE_MENU.LOGO_PERMISSION_DENIED'));
+      return;
+    }
+
     if (!selectedLogo?.uri) {
       return;
     }
@@ -127,6 +147,7 @@ const CreateLogoScreen = () => {
       setIsSubmittingLogo(false);
     }
   }, [
+    canManageLogo,
     clearLocalStates,
     dispatch,
     notifyLogoUpdated,
@@ -138,9 +159,16 @@ const CreateLogoScreen = () => {
   ]);
 
   const canCreateLogo =
-    homestayName.trim().length > 0 && logoDescription.trim().length > 0;
+    canManageLogo &&
+    homestayName.trim().length > 0 &&
+    logoDescription.trim().length > 0;
 
   const handleCreateLogo = useCallback(async () => {
+    if (!canManageLogo) {
+      errorToast(t('CREATE_MENU.LOGO_PERMISSION_DENIED'));
+      return;
+    }
+
     if (!canCreateLogo || isGeneratingLogo) {
       return;
     }
@@ -176,6 +204,7 @@ const CreateLogoScreen = () => {
     }
   }, [
     canCreateLogo,
+    canManageLogo,
     clearLocalStates,
     homestayName,
     isGeneratingLogo,
@@ -188,6 +217,11 @@ const CreateLogoScreen = () => {
   }, []);
 
   const handleSetActiveLogo = useCallback(async () => {
+    if (!canManageLogo) {
+      errorToast(t('CREATE_MENU.LOGO_PERMISSION_DENIED'));
+      return;
+    }
+
     if (!generatedLogo?.url || isActivatingLogo) {
       return;
     }
@@ -218,6 +252,7 @@ const CreateLogoScreen = () => {
       setIsActivatingLogo(false);
     }
   }, [
+    canManageLogo,
     clearLocalStates,
     dispatch,
     generatedLogo,

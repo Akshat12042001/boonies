@@ -14,7 +14,8 @@ export default {
         MENU_SCREEN: 'Tabs-MenuScreen',
         INVOICES_SCREEN: 'Tabs-InvoicesScreen',
         PROPERTIES_SCREEN: 'Tabs-PropertiesScreen',
-        MORE_SCREEN: 'Tabs-MoreScreen'
+        MORE_SCREEN: 'Tabs-MoreScreen',
+        MESSAGES_SCREEN: 'Tabs-MessagesScreen'
     },
     COMMON: {
         CREATE_INVOICE_SCREEN: 'Common-CreateInvoiceScreen',
@@ -33,6 +34,9 @@ export default {
         CHECKOUT_SCREEN: 'Common-CheckoutScreen',
         SHOP_PRODUCT_DETAIL_SCREEN: 'Common-ShopProductDetailScreen',
         DEALS_SCREEN: 'Common-DealsScreen',
-        DEAL_PREVIEW_SCREEN: 'Common-DealPreviewScreen'
+        DEAL_PREVIEW_SCREEN: 'Common-DealPreviewScreen',
+        CHAT_SCREEN: 'Common-ChatScreen',
+        PROPERTIES_COMMON_SCREEN: 'Common-PropertiesCommonScreen',
+        STAFF_MANAGEMENT_SCREEN: 'Common-StaffManagementScreen',
     }
 };

@@ -501,4 +501,20 @@ export default {
       orderNotes: schemas.stringOptional,
     }),
   },
+  INVITE_STAFF: {
+    schema: Yup.object().shape({
+      firstName: Yup.string()
+        .trim()
+        .required('STAFF.INVITE.FIRST_NAME_REQUIRED'),
+      lastName: Yup.string()
+        .trim()
+        .required('STAFF.INVITE.LAST_NAME_REQUIRED'),
+      email: schemas.email,
+      phone: Yup.string()
+        .transform(value => (value?.trim() ? value.trim() : undefined))
+        .matches(/^\d{10}$/, 'STAFF.INVITE.PHONE_INVALID')
+        .optional(),
+      permissions: Yup.object().optional(),
+    }),
+  },
 };

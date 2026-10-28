@@ -15,3 +15,6 @@ export {default as CheckoutScreen} from './checkoutScreen';
 export {default as ShopProductDetailScreen} from './shopProductDetailScreen';
 export {default as DealsScreen} from './dealsScreen';
 export {default as DealPreviewScreen} from './dealPreviewScreen';
+export {default as ChatScreen} from './chatScreen';
+export {default as PropertiesCommonScreen} from './propertiesCommonScreen';
+export {default as StaffManagementScreen} from './staffManagementScreen';

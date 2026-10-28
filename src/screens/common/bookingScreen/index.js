@@ -3,6 +3,7 @@ import {ActivityIndicator, FlatList, RefreshControl, TouchableOpacity, View} fro
 import moment from 'moment';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
+import {useSelector} from 'react-redux';
 import Skeleton from 'react-native-reanimated-skeleton';
 import {
   ActionLoadingOverlay,
@@ -34,6 +35,7 @@ import {
   getDealSummaryShareTitle,
   shareDealSummary,
 } from '../../../utils/shareDealSummary';
+import {hasStaffModule, STAFF_MODULE} from '../../../utils/staff';
 import styles from './styles';
 import {PlusIcon} from '../../../components/svgs';
 
@@ -62,6 +64,11 @@ const ItemSeparator = () => <View style={styles.separator} />;
 
 const BookingScreen = () => {
   const {t} = useTranslation();
+  const user = useSelector(state => state.auth.user);
+  const canAddDirectBooking = hasStaffModule(
+    user,
+    STAFF_MODULE.DIRECT_BOOKINGS,
+  );
   const navigation = useNavigation();
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
@@ -466,11 +473,13 @@ const BookingScreen = () => {
         backAccessibilityLabel={t('CREATE_BOOKING.BACK')}
         onBack={handleBack}
         rightComponent={
-          <TouchableOpacity
-            onPress={onAddBooking}
-            style={styles.headerIconButton}>
-            <PlusIcon color={COLORS.WHITE} size={18} />
-          </TouchableOpacity>
+          canAddDirectBooking ? (
+            <TouchableOpacity
+              onPress={onAddBooking}
+              style={styles.headerIconButton}>
+              <PlusIcon color={COLORS.WHITE} size={18} />
+            </TouchableOpacity>
+          ) : null
         }
       />
 

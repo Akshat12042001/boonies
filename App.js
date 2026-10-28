@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import {View} from 'react-native';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
+import {KeyboardProvider} from 'react-native-keyboard-controller';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation';
 import {getStore, getPersistor} from './src/redux/index';
@@ -39,6 +40,7 @@ const App = () => {
 
   return (
     <GestureHandlerRootView style={{flex: 1}}>
+    <KeyboardProvider>
     <SafeAreaProvider>
       <AutocompleteDropdownContextProvider>
         <Provider store={store}>
@@ -68,6 +70,7 @@ const App = () => {
         </Provider>
       </AutocompleteDropdownContextProvider>
     </SafeAreaProvider>
+    </KeyboardProvider>
     </GestureHandlerRootView>
   );
 };

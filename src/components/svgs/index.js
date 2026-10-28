@@ -61,3 +61,6 @@ export {default as StorefrontIcon} from './storefrontIcon';
 export {default as DealIcon} from './dealIcon';
 export {default as HourglassIcon} from './hourglassIcon';
 export {default as CloseCircleIcon} from './closeCircleIcon';
+export {default as MessagesIcon} from './messagesIcon';
+export {default as StaffIcon} from './staffIcon';
+export {default as SearchIcon} from './searchIcon';

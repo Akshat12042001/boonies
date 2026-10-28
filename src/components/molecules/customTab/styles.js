@@ -1,4 +1,5 @@
 import {StyleSheet} from 'react-native';
+import {COLORS} from '../../../constants';
 
 export default StyleSheet.create({
   /** Row inside the pill — equal-width tabs */
@@ -18,6 +19,23 @@ export default StyleSheet.create({
   tabColumn: {
     alignItems: 'center',
     justifyContent: 'flex-end',
+  },
+  iconWrap: {
+    width: 28,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeDot: {
+    position: 'absolute',
+    top: -2,
+    right: -4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF3B3B',
+    borderWidth: 1.5,
+    borderColor: COLORS.BACKGROUND,
   },
   /** Keeps icon row baseline aligned when dot is hidden */
   dotSlot: {

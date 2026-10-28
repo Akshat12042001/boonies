@@ -34,6 +34,7 @@ import {buildMenuPayload, formatMenuDetails} from '../../../utils/menu';
 import {getHomestayLogoUrl} from '../../../utils/logo';
 import {createMenuPdfFile} from '../../../utils/menuPdf';
 import {errorToast, successToast} from '../../../utils/alerts';
+import {hasStaffModule, STAFF_MODULE} from '../../../utils/staff';
 import styles from './styles';
 
 const VALIDATION_FIELD_ORDER = [
@@ -138,6 +139,7 @@ const CreateMenuScreen = () => {
   const routeMenuId = route.params?.menuId;
   const insets = useSafeAreaInsets();
   const user = useSelector(state => state.auth.user);
+  const canManageLogo = hasStaffModule(user, STAFF_MODULE.LOGO);
   const homestayLogoUrl = getHomestayLogoUrl(user);
   const homestayLogoUrlRef = useRef(homestayLogoUrl);
   homestayLogoUrlRef.current = homestayLogoUrl;
@@ -219,9 +221,14 @@ const CreateMenuScreen = () => {
   }, []);
 
   const handleSelectLogo = useCallback(() => {
+    if (!canManageLogo) {
+      errorToast(t('CREATE_MENU.LOGO_PERMISSION_DENIED'));
+      return;
+    }
+
     openedLogoScreenRef.current = true;
     navigation.navigate(NAVIGATION.COMMON.CREATE_LOGO_SCREEN);
-  }, [navigation]);
+  }, [canManageLogo, navigation, t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -520,7 +527,11 @@ const CreateMenuScreen = () => {
                     <TouchableOpacity
                       onPress={handleSelectLogo}
                       accessibilityRole="button"
-                      style={styles.logoRow}>
+                      accessibilityState={{disabled: !canManageLogo}}
+                      style={[
+                        styles.logoRow,
+                        !canManageLogo && styles.logoRowDisabled,
+                      ]}>
                       <View style={styles.logoPlaceholder}>
                         {values.logoUrl ? (
                           <Image
@@ -551,7 +562,11 @@ const CreateMenuScreen = () => {
                           color={COLORS.TEXT_SECONDARY}
                           size={10}
                           containerStyle={styles.logoSubtitle}>
-                          {t('CREATE_MENU.LOGO_HINT')}
+                          {t(
+                            canManageLogo
+                              ? 'CREATE_MENU.LOGO_HINT'
+                              : 'CREATE_MENU.LOGO_PERMISSION_DENIED',
+                          )}
                         </StyledText>
                       </View>
                       <ChevronRightIcon color={COLORS.TEXT_MUTED} />

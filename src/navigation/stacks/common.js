@@ -19,6 +19,9 @@ import {
   ShopProductDetailScreen,
   DealsScreen,
   DealPreviewScreen,
+  ChatScreen,
+  PropertiesCommonScreen,
+  StaffManagementScreen,
 } from '../../screens/common';
 import config from '../config';
 
@@ -95,6 +98,18 @@ export default () => {
         name={NAVIGATION.COMMON.DEAL_PREVIEW_SCREEN}
         component={DealPreviewScreen}
       />
-      </Stack.Navigator>
+      <Stack.Screen
+        name={NAVIGATION.COMMON.CHAT_SCREEN}
+        component={ChatScreen}
+      />
+      <Stack.Screen
+        name={NAVIGATION.COMMON.PROPERTIES_COMMON_SCREEN}
+        component={PropertiesCommonScreen}
+      />
+      <Stack.Screen
+        name={NAVIGATION.COMMON.STAFF_MANAGEMENT_SCREEN}
+        component={StaffManagementScreen}
+      />
+    </Stack.Navigator>
   );
 };

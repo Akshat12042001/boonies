@@ -75,6 +75,9 @@ export default StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 10,
   },
+  logoRowDisabled: {
+    opacity: 0.55,
+  },
   logoPlaceholder: {
     alignItems: 'center',
     backgroundColor: COLORS.SURFACE,

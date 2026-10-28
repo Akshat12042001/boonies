@@ -83,6 +83,12 @@ export default StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 8,
   },
+  quickStatCardDisabled: {
+    opacity: 0.55,
+  },
+  seeAllDisabled: {
+    opacity: 0.45,
+  },
   quickStatIconWrap: {
     alignItems: 'center',
     borderRadius: 9,

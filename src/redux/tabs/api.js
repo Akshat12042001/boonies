@@ -11,6 +11,8 @@ const ENDPOINTS = {
   FOOD_MENU: '/food-menus',
   HOST_DIRECT_BOOKINGS: '/deals/host/direct-bookings',
   NOTIFICATIONS: '/notification',
+  CONVERSATIONS: '/messaging/conversations',
+  UNREAD_COUNT: '/messaging/unread-count',
 };
 
 
@@ -107,6 +109,39 @@ const baseQuery = fetchBaseQuery({
           params,
         }),
       }),
+      getConversations: builder.query({
+        query: params => ({
+          url: ENDPOINTS.CONVERSATIONS,
+          method: 'GET',
+          params,
+        }),
+        serializeQueryArgs: ({endpointName}) => endpointName,
+        merge: (currentCache, newResponse, {arg}) => {
+          if (Number(arg?.page) === 1) {
+            return newResponse;
+          }
+
+          const currentItems = currentCache?.conversations || [];
+          const existingIds = new Set(currentItems.map(item => item.id));
+          const nextItems = (newResponse?.conversations || []).filter(
+            item => !existingIds.has(item.id),
+          );
+
+          currentCache.conversations = [...currentItems, ...nextItems];
+          currentCache.meta = newResponse?.meta;
+          currentCache.success = newResponse?.success;
+        },
+        forceRefetch: ({currentArg, previousArg}) =>
+          currentArg?.page !== previousArg?.page ||
+          currentArg?.limit !== previousArg?.limit ||
+          currentArg?.search !== previousArg?.search,
+      }),
+      getUnreadCount: builder.query({
+        query: () => ({
+          url: ENDPOINTS.UNREAD_COUNT,
+          method: 'GET',
+        }),
+      }),
       getHostDirectBookings: builder.query({
         query: data => ({
           url: ENDPOINTS.HOST_DIRECT_BOOKINGS,
@@ -151,4 +186,6 @@ const baseQuery = fetchBaseQuery({
     useGetFoodMenuQuery,
     useGetHostDirectBookingsQuery,
     useGetNotificationsQuery,
+    useGetConversationsQuery,
+    useGetUnreadCountQuery,
   } = tabsApi;

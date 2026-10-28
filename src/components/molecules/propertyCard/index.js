@@ -46,6 +46,7 @@ const PropertyCard = ({
   status,
   placeholder,
   compact = false,
+  menuItems = PROPERTY_CARD_ITEMS,
   onPress,
   onMenuAction,
 }) => {
@@ -131,7 +132,7 @@ const PropertyCard = ({
           </TouchableOpacity>
         }>
         <View style={styles.menuList}>
-          {PROPERTY_CARD_ITEMS.map(item => {
+          {menuItems.map(item => {
             const iconColor = item.destructive
               ? COLORS.INVOICE_DELETE
               : COLORS.GREYSCALE_900;

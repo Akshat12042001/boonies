@@ -7,12 +7,16 @@ export const PROPERTY_CARD_ACTION = {
   DELETE: 'delete',
 };
 
-export const PROPERTY_CARD_ITEMS = [
+export const PROPERTY_CARD_PREVIEW_ITEMS = [
   {
     action: PROPERTY_CARD_ACTION.PREVIEW,
     labelKey: 'PROPERTIES.MENU_PREVIEW',
     Icon: LoginEyeIcon,
   },
+];
+
+export const PROPERTY_CARD_ITEMS = [
+  ...PROPERTY_CARD_PREVIEW_ITEMS,
   {
     action: PROPERTY_CARD_ACTION.VIEW_LISTING,
     labelKey: 'PROPERTIES.MENU_VIEW_LISTING',

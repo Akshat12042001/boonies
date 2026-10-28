@@ -1,44 +1,43 @@
-import React from 'react';
+import React, {useMemo} from 'react';
 import {View} from 'react-native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {useSelector} from 'react-redux';
 import {NAVIGATION} from '../../constants';
-import { CustomTab } from '../../components/molecules';
-import { HomeScreen, MenuScreen, InvoicesScreen, PropertiesScreen, MoreScreen } from '../../screens/tabs';
+import {CustomTab} from '../../components/molecules';
+import {
+  HomeScreen,
+  MenuScreen,
+  InvoicesScreen,
+  MoreScreen,
+  MessagesScreen,
+} from '../../screens/tabs';
+import {
+  getBottomTabsNavigatorKey,
+  getVisibleBottomTabs,
+} from '../../utils/bottomTabs';
 
 const BottomTabs = createBottomTabNavigator();
 
-const TABS = [
-  {
-    name: NAVIGATION.TABS.HOME_SCREEN,
-    component: HomeScreen,
-    title: 'TABS.HOME',
-  },
-  {
-    name: NAVIGATION.TABS.MENU_SCREEN,
-    component: MenuScreen,
-    title: 'TABS.MENU',
-  },
-  {
-    name: NAVIGATION.TABS.INVOICES_SCREEN,
-    component: InvoicesScreen,
-    title: 'TABS.INVOICES',
-  },
-  {
-    name: NAVIGATION.TABS.PROPERTIES_SCREEN,
-    component: PropertiesScreen,
-    title: 'TABS.PROPERTIES',
-  },
-  {
-    name: NAVIGATION.TABS.MORE_SCREEN,
-    component: MoreScreen,
-    title: 'TABS.MORE',
-  },
-];
+const TAB_COMPONENTS = {
+  [NAVIGATION.TABS.HOME_SCREEN]: HomeScreen,
+  [NAVIGATION.TABS.MENU_SCREEN]: MenuScreen,
+  [NAVIGATION.TABS.INVOICES_SCREEN]: InvoicesScreen,
+  [NAVIGATION.TABS.MESSAGES_SCREEN]: MessagesScreen,
+  [NAVIGATION.TABS.MORE_SCREEN]: MoreScreen,
+};
 
 export default () => {
+  const user = useSelector(state => state.auth.user);
+
+  const tabs = useMemo(() => getVisibleBottomTabs(user), [user]);
+  const navigatorKey = useMemo(
+    () => getBottomTabsNavigatorKey(user),
+    [user],
+  );
 
   return (
     <BottomTabs.Navigator
+      key={navigatorKey}
       detachInactiveScreens={false}
       screenOptions={{
         headerShown: false,
@@ -58,18 +57,16 @@ export default () => {
           <CustomTab {...props} />
         </View>
       )}>
-      {TABS.map((item, index) => {
-        return (
-          <BottomTabs.Screen
-            key={`${item.name}${index}`}
-            name={item.name}
-            component={item.component}
-            initialParams={{
-              title: item.title,
-            }}
-          />
-        );
-      })}
+      {tabs.map(item => (
+        <BottomTabs.Screen
+          key={item.name}
+          name={item.name}
+          component={TAB_COMPONENTS[item.name]}
+          initialParams={{
+            title: item.title,
+          }}
+        />
+      ))}
     </BottomTabs.Navigator>
   );
 };

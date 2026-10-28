@@ -1,17 +1,18 @@
 import React, {useCallback, useMemo, useState} from 'react';
-import {ActivityIndicator, TouchableOpacity, View} from 'react-native';
+import {TouchableOpacity, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useTranslation} from 'react-i18next';
 import {useDispatch, useSelector} from 'react-redux';
+import {useNavigation} from '@react-navigation/native';
 import {ScreenContainer, StyledText} from '../../../components/atoms';
-import {CalendarIcon, ChevronRightIcon} from '../../../components/svgs';
+import {ChevronRightIcon} from '../../../components/svgs';
 import {makeLogoutRequest} from '../../../api/auth';
 import {COLORS, NAVIGATION} from '../../../constants';
 import {reset} from '../../../redux/auth/auth.reducer';
 import {showAlert} from '../../../utils/alerts';
-import styles from './styles';
+import {hasAnyStaffModule, isStaffUser} from '../../../utils/staff';
 import DATA from './config';
-import {useNavigation} from '@react-navigation/native';
+import styles from './styles';
 
 const MoreScreen = () => {
   const {t} = useTranslation();
@@ -25,6 +26,20 @@ const MoreScreen = () => {
   const headerStyle = useMemo(
     () => [styles.header, {paddingTop: insets.top || 20, paddingBottom: 20}],
     [insets.top],
+  );
+
+  const menuItems = useMemo(
+    () =>
+      DATA.filter(item => {
+        if (item.hostOnly && isStaffUser(user)) {
+          return false;
+        }
+        if (item.modules?.length) {
+          return hasAnyStaffModule(user, item.modules);
+        }
+        return true;
+      }),
+    [user],
   );
 
   const subtitle = user?.email || user?.firstName || t('MORE.SUBTITLE');
@@ -74,6 +89,16 @@ const MoreScreen = () => {
           screen: NAVIGATION.COMMON.DEALS_SCREEN,
         });
         break;
+      case 6:
+        navigation.navigate(NAVIGATION.STACKS.COMMON,{
+          screen: NAVIGATION.COMMON.PROPERTIES_COMMON_SCREEN,
+        });
+        break;
+      case 7:
+        navigation.navigate(NAVIGATION.STACKS.COMMON,{
+          screen: NAVIGATION.COMMON.STAFF_MANAGEMENT_SCREEN,
+        });
+        break;
       case 3:
         handleLogoutPress();
         break;
@@ -94,7 +119,7 @@ const MoreScreen = () => {
           </StyledText>
         </View>
 
-        {DATA.map(item => (
+        {menuItems.map(item => (
           <View style={styles.content} key={item.id}>
             <TouchableOpacity
               accessibilityRole="button"

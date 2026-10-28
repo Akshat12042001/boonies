@@ -1589,6 +1589,51 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - react-native-keyboard-controller (1.22.9):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - react-native-keyboard-controller/common (= 1.22.9)
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
+  - react-native-keyboard-controller/common (1.22.9):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - react-native-maps/Generated (1.29.11):
     - hermes-engine
     - RCTRequired
@@ -2602,6 +2647,7 @@ DEPENDENCIES:
   - react-native-date-picker (from `../node_modules/react-native-date-picker`)
   - "react-native-document-picker (from `../node_modules/@react-native-documents/picker`)"
   - react-native-image-picker (from `../node_modules/react-native-image-picker`)
+  - react-native-keyboard-controller (from `../node_modules/react-native-keyboard-controller`)
   - react-native-maps/Google (from `../node_modules/react-native-maps`)
   - react-native-pdf (from `../node_modules/react-native-pdf`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
@@ -2755,6 +2801,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-documents/picker"
   react-native-image-picker:
     :path: "../node_modules/react-native-image-picker"
+  react-native-keyboard-controller:
+    :path: "../node_modules/react-native-keyboard-controller"
   react-native-maps:
     :path: "../node_modules/react-native-maps"
   react-native-pdf:
@@ -2908,6 +2956,7 @@ SPEC CHECKSUMS:
   react-native-date-picker: 906b5bc157f9c2b1bba2a841470581b9f73cb452
   react-native-document-picker: 5845495634d0116cc985ebd39474fc8fad1025c8
   react-native-image-picker: 09cea417bef3ee25008ad21d4426f9a1fc54ad84
+  react-native-keyboard-controller: 1a1590c289fbf343f55d06f1835db46d9a02f990
   react-native-maps: 8f801e910e23f99d43e2e47e3e5ff5a31f6b3ac9
   react-native-pdf: b8acb03b20eedf22ef9da008970ecb8cfdbfc1d7
   react-native-safe-area-context: 0bbcdfba5c4a1b3203276f1ed9128e3239fdf199
@@ -2960,6 +3009,6 @@ SPEC CHECKSUMS:
   RNWorklets: 0000755d812f23d0fc703319e2b1f65d9204c954
   Yoga: c30c859b7e9b75e547b600b486fe33165f60de00
 
-PODFILE CHECKSUM: 6c89b2df44faf8a1cd340bdc5859291b6d7c94ce
+PODFILE CHECKSUM: 28731a887ab21b21ed2a57fb898e203cc6913a5e
 
 COCOAPODS: 1.16.2
