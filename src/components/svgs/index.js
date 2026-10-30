@@ -64,3 +64,6 @@ export {default as CloseCircleIcon} from './closeCircleIcon';
 export {default as MessagesIcon} from './messagesIcon';
 export {default as StaffIcon} from './staffIcon';
 export {default as SearchIcon} from './searchIcon';
+export {default as SuggestedPriceIcon} from './suggestedPriceIcon';
+export {default as SwapHorizIcon} from './swapHorizIcon';
+export {default as NightIcon} from './nightIcon';

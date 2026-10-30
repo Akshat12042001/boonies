@@ -3,8 +3,17 @@ import {KeyboardAvoidingView, Platform, Pressable, TextInput, View} from 'react-
 import {useFocusEffect, useNavigation, useRoute} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
 import {useSelector} from 'react-redux';
-import {Chat} from '@kesha-antonov/react-native-chat';
+import {Bubble, Chat} from '@kesha-antonov/react-native-chat';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {
+  buildDealOfferPayload,
+  makeAcceptDealRequest,
+  makeAddDealOfferRequest,
+  makeGetConversationDealRequest,
+  makeGetDealRequest,
+  makeRejectDealRequest,
+  parseDealActionResponse,
+} from '../../../api/deals';
 import {
   makeGetConversationMessagesRequest,
   makeGetConversationRequest,
@@ -12,10 +21,14 @@ import {
   refreshConversationsTabCache,
 } from '../../../api/messaging';
 import {ScreenContainer, StyledText} from '../../../components/atoms';
-import {ScreenHeader} from '../../../components/molecules';
+import {
+  DealMessageCard,
+  ScreenHeader,
+} from '../../../components/molecules';
 import {COLORS} from '../../../constants';
 import {MessagesIcon} from '../../../components/svgs';
 import SocketService, {SOCKET_EVENTS} from '../../../services/socketService';
+import {errorToast, successToast} from '../../../utils/alerts';
 import {
   conversationIdOf,
   createMockChatMessages,
@@ -25,6 +38,7 @@ import {
   toChatThread,
   upsertChatMessage,
 } from '../../../utils/chat';
+import {conversationDealRecord} from '../../../utils/dealMessage';
 import styles from './styles';
 
 const TYPING_IDLE_MS = 1200;
@@ -77,10 +91,13 @@ const ChatScreen = () => {
   const [isMessagesLoading, setIsMessagesLoading] = useState(Boolean(conversationId));
   const [isMessagesFetching, setIsMessagesFetching] = useState(false);
   const [isLoadingEarlier, setIsLoadingEarlier] = useState(false);
+  const [activeDeal, setActiveDeal] = useState(null);
+  const [dealSubmittingAction, setDealSubmittingAction] = useState('');
   const typingTimeoutRef = useRef(null);
   const remoteTypingTimeoutRef = useRef(null);
   const typingSentRef = useRef(false);
   const loadRequestIdRef = useRef(0);
+  const refreshMessagesRef = useRef(null);
 
   const currentUser = useMemo(
     () => ({
@@ -125,6 +142,109 @@ const ChatScreen = () => {
     [conversationId],
   );
 
+  const applyDealMessage = useCallback(
+    payload => {
+      const incoming = toChatMessage(
+        payload,
+        currentUserRef.current,
+        otherUserRef.current,
+      );
+      if (!incoming) {
+        return;
+      }
+
+      setMessages(previousMessages => upsertChatMessage(previousMessages, incoming));
+    },
+    [],
+  );
+
+  const refreshMessages = useCallback(async () => {
+    if (!conversationId) {
+      return;
+    }
+
+    try {
+      const messagesResponse = await makeGetConversationMessagesRequest({
+        conversationId,
+        limit: INITIAL_MESSAGE_LIMIT,
+      });
+      const history = toChatThread(
+        messagesResponse,
+        currentUserRef.current,
+        otherUserRef.current,
+      );
+      if (history.length) {
+        setMessages(previousMessages =>
+          replaceChatHistory(previousMessages, history),
+        );
+      }
+      setMessagesMeta({
+        hasMore: Boolean(messagesResponse?.hasMore),
+        cursor: messagesResponse?.cursor || null,
+      });
+    } catch (error) {
+      // Keep current thread on refresh failure.
+    }
+  }, [conversationId]);
+
+  refreshMessagesRef.current = refreshMessages;
+
+  const loadConversationDeal = useCallback(async () => {
+    if (!conversationId) {
+      setActiveDeal(null);
+      return null;
+    }
+
+    try {
+      const response = await makeGetConversationDealRequest(conversationId);
+      const deal = conversationDealRecord(response);
+      setActiveDeal(deal);
+      return deal;
+    } catch (error) {
+      setActiveDeal(null);
+      return null;
+    }
+  }, [conversationId]);
+
+  const hydrateDealFromPayload = useCallback(
+    async payload => {
+      if (!sameRoom(payload, conversationId)) {
+        return;
+      }
+
+      const parsed = parseDealActionResponse(payload);
+      if (parsed.deal) {
+        setActiveDeal(parsed.deal);
+      }
+
+      if (parsed.newMessage) {
+        applyDealMessage(parsed.newMessage);
+      }
+
+      const dealId =
+        parsed.deal?.id ||
+        parsed.newMessage?.dealOffer?.dealId ||
+        parsed.latestOffer?.dealId ||
+        '';
+
+      if (!parsed.deal && dealId) {
+        try {
+          const dealResponse = await makeGetDealRequest(dealId);
+          const deal = conversationDealRecord(dealResponse) || dealResponse?.deal;
+          if (deal) {
+            setActiveDeal(deal);
+          }
+        } catch (error) {
+          // Fall through to message refresh.
+        }
+      }
+
+      await refreshMessagesRef.current?.();
+      refreshConversationsTabCache().catch(() => {});
+    },
+    [applyDealMessage, conversationId],
+  );
+
   const loadConversation = useCallback(async () => {
     if (!conversationId) {
       return;
@@ -135,7 +255,10 @@ const ChatScreen = () => {
     setIsMessagesFetching(true);
 
     try {
-      const conversationResponse = await makeGetConversationRequest(conversationId);
+      const [conversationResponse] = await Promise.all([
+        makeGetConversationRequest(conversationId),
+        loadConversationDeal(),
+      ]);
       if (requestId !== loadRequestIdRef.current) {
         return;
       }
@@ -179,7 +302,7 @@ const ChatScreen = () => {
         setIsMessagesFetching(false);
       }
     }
-  }, [conversationId]);
+  }, [conversationId, loadConversationDeal]);
 
   const stopTyping = useCallback(() => {
     clearTimeout(typingTimeoutRef.current);
@@ -221,6 +344,8 @@ const ChatScreen = () => {
   useEffect(() => {
     setIsTyping(false);
     setMessagesMeta({hasMore: false, cursor: null});
+    setDealSubmittingAction('');
+    setActiveDeal(null);
     if (!conversationId) {
       setMessages(createMockChatMessages(currentUserRef.current, otherUserRef.current));
       setIsMessagesLoading(false);
@@ -245,6 +370,24 @@ const ChatScreen = () => {
       const unsubscribe = SocketService.subscribe((event, payload) => {
         if (event === SOCKET_EVENTS.MESSAGE_RECEIVED && sameRoom(payload, conversationId)) {
           appendIncoming(payload);
+          return;
+        }
+
+        if (
+          (event === SOCKET_EVENTS.DEAL_UPDATED ||
+            event === SOCKET_EVENTS.DEAL_CREATED) &&
+          sameRoom(payload, conversationId)
+        ) {
+          hydrateDealFromPayload(payload);
+          return;
+        }
+
+        if (
+          event === SOCKET_EVENTS.NEW_MESSAGE_NOTIFICATION &&
+          sameRoom(payload, conversationId)
+        ) {
+          refreshMessagesRef.current?.();
+          refreshConversationsTabCache().catch(() => {});
           return;
         }
 
@@ -299,6 +442,7 @@ const ChatScreen = () => {
     }, [
       appendIncoming,
       conversationId,
+      hydrateDealFromPayload,
       loadConversation,
       markConversationRead,
       stopTyping,
@@ -381,6 +525,119 @@ const ChatScreen = () => {
       typingTimeoutRef.current = setTimeout(stopTyping, TYPING_IDLE_MS);
     },
     [conversationId, stopTyping],
+  );
+
+  const handleDealActionResult = useCallback(
+    async (response, successKey) => {
+      const parsed = parseDealActionResponse(response);
+      if (parsed.deal) {
+        setActiveDeal(parsed.deal);
+      }
+      if (parsed.newMessage) {
+        applyDealMessage(parsed.newMessage);
+      }
+      await refreshMessages();
+      refreshConversationsTabCache().catch(() => {});
+      successToast(t(successKey));
+    },
+    [applyDealMessage, refreshMessages, t],
+  );
+
+  const handleAcceptDeal = useCallback(
+    async deal => {
+      const dealId = deal?.dealId;
+      if (!dealId || dealSubmittingAction) {
+        return;
+      }
+
+      setDealSubmittingAction('accept');
+      try {
+        const response = await makeAcceptDealRequest(dealId);
+        await handleDealActionResult(response, 'CHAT.DEAL.ACCEPT_SUCCESS');
+      } catch (error) {
+        errorToast(
+          error?.response?.data?.message || t('CHAT.DEAL.ACTION_FAILED'),
+        );
+      } finally {
+        setDealSubmittingAction('');
+      }
+    },
+    [dealSubmittingAction, handleDealActionResult, t],
+  );
+
+  const handleRejectDeal = useCallback(
+    async deal => {
+      const dealId = deal?.dealId;
+      if (!dealId || dealSubmittingAction) {
+        return;
+      }
+
+      setDealSubmittingAction('reject');
+      try {
+        const response = await makeRejectDealRequest(dealId);
+        await handleDealActionResult(response, 'CHAT.DEAL.REJECT_SUCCESS');
+      } catch (error) {
+        errorToast(
+          error?.response?.data?.message || t('CHAT.DEAL.ACTION_FAILED'),
+        );
+      } finally {
+        setDealSubmittingAction('');
+      }
+    },
+    [dealSubmittingAction, handleDealActionResult, t],
+  );
+
+  const handleReviseDeal = useCallback(
+    async (deal, nextPrice) => {
+      const dealId = deal?.dealId || activeDeal?.id;
+      if (!dealId || dealSubmittingAction || !nextPrice) {
+        return;
+      }
+
+      setDealSubmittingAction('revise');
+      try {
+        const response = await makeAddDealOfferRequest(
+          dealId,
+          buildDealOfferPayload(deal, nextPrice),
+        );
+        await handleDealActionResult(response, 'CHAT.DEAL.REVISE_SUCCESS');
+      } catch (error) {
+        errorToast(
+          error?.response?.data?.message || t('CHAT.DEAL.ACTION_FAILED'),
+        );
+      } finally {
+        setDealSubmittingAction('');
+      }
+    },
+    [activeDeal?.id, dealSubmittingAction, handleDealActionResult, t],
+  );
+
+  const renderBubble = useCallback(
+    props => {
+      const message = props?.currentMessage;
+      if (message?.messageType === 'deal' && message?.deal) {
+        return (
+          <View style={styles.dealBubble}>
+            <DealMessageCard
+              deal={message.deal}
+              isSubmitting={Boolean(dealSubmittingAction)}
+              submittingAction={dealSubmittingAction}
+              onAccept={handleAcceptDeal}
+              onReject={handleRejectDeal}
+              onSendOffer={handleReviseDeal}
+            />
+          </View>
+        );
+      }
+
+      return <Bubble {...props} />;
+    },
+    [
+      dealSubmittingAction,
+      handleAcceptDeal,
+      handleRejectDeal,
+      handleReviseDeal,
+    ],
   );
 
   const handleSend = useCallback(async () => {
@@ -471,6 +728,7 @@ const ChatScreen = () => {
               onPress: handleLoadEarlier,
             }}
             renderInputToolbar={renderInputToolbar}
+            renderBubble={renderBubble}
             wrapperStyle={outgoingBubbleStyle}
             theme={chatTheme}
           />

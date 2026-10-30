@@ -1,3 +1,5 @@
+import {isDealMessage, mapDealFromMessage} from './dealMessage';
+
 const messageRecord = payload => payload?.message || payload?.data || payload || {};
 
 const messageText = message => {
@@ -40,7 +42,8 @@ export const toChatMessage = (payload, currentUser, otherUser) => {
   const text = messageText(message);
   const fileUrl = message.fileUrl || '';
   const image = message.type === 'image' && fileUrl ? fileUrl : undefined;
-  if (!text && !image) {
+  const dealMessage = isDealMessage(message);
+  if (!text && !image && !dealMessage) {
     return null;
   }
 
@@ -48,10 +51,13 @@ export const toChatMessage = (payload, currentUser, otherUser) => {
   const mine = senderId && senderId === String(currentUser?._id || '');
   const createdAt = message?.createdAt || message?.created_at || new Date();
   const sender = message.sender || {};
+  const deal = dealMessage
+    ? mapDealFromMessage(message, currentUser?._id)
+    : undefined;
 
   return {
     _id: String(messageId(message) || `temp-${Date.now()}`),
-    text,
+    text: dealMessage ? text || 'Booking offer' : text,
     image,
     createdAt: new Date(createdAt),
     user: mine
@@ -64,6 +70,8 @@ export const toChatMessage = (payload, currentUser, otherUser) => {
     sent: mine,
     received: mine && Boolean(message.isRead),
     pending: false,
+    messageType: dealMessage ? 'deal' : message.type || 'text',
+    deal,
   };
 };
 
@@ -175,6 +183,32 @@ export const replaceChatHistory = (current, history) => {
 const minutesAgo = minutes => new Date(Date.now() - minutes * 60 * 1000);
 
 export const createMockChatMessages = (currentUser, otherUser) => [
+  {
+    _id: 'mock-deal-1',
+    text: 'Booking offer',
+    createdAt: minutesAgo(4),
+    user: otherUser,
+    messageType: 'deal',
+    deal: mapDealFromMessage(
+      {
+        type: 'deal',
+        id: 'mock-deal-1',
+        senderId: otherUser?._id,
+        dealOffer: {
+          id: 'mock-deal-offer-1',
+          dealId: 'mock-deal-1',
+          offeredById: otherUser?._id,
+          checkIn: '2026-10-30',
+          checkOut: '2026-10-31',
+          guests: 1,
+          offeredPrice: '222.00',
+          status: 'pending',
+          isLatest: true,
+        },
+      },
+      currentUser?._id,
+    ),
+  },
   {
     _id: 'mock-4',
     text: 'Perfect, we will reach around 2:30 pm. Thank you.',

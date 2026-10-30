@@ -1,5 +1,5 @@
 import {StyleSheet} from 'react-native';
-import {COLORS} from '../../../constants';
+import {COLORS, SCREEN} from '../../../constants';
 
 export default StyleSheet.create({
   screen: {
@@ -8,6 +8,11 @@ export default StyleSheet.create({
   },
   chat: {
     flex: 1,
+  },
+  dealBubble: {
+    maxWidth: SCREEN.WIDTH * 0.72,
+    paddingHorizontal: 2,
+    width: SCREEN.WIDTH * 0.72,
   },
   empty: {
     position: 'absolute',

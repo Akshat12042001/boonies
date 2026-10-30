@@ -5,7 +5,6 @@ import {tabsApi} from '../redux/tabs/api';
 const ENDPOINTS = {
   CONVERSATIONS: '/messaging/conversations',
   UNREAD_COUNT: '/messaging/unread-count',
-  CONVERSATION_DEALS: '/deals/conversation',
 };
 
 export const CONVERSATIONS_QUERY_ARGS = {page: 1, limit: 20};
@@ -49,12 +48,6 @@ export const makeMarkConversationReadRequest = ({
       `${ENDPOINTS.CONVERSATIONS}/${conversationId}/messages/read`,
       messageId ? {messageId} : {},
     )
-    .then(res => res.data);
-};
-
-export const makeGetConversationDealsRequest = conversationId => {
-  return APIClient()
-    .get(`${ENDPOINTS.CONVERSATION_DEALS}/${conversationId}`)
     .then(res => res.data);
 };
 

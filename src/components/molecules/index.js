@@ -18,3 +18,4 @@ export {default as AmenityCard} from './amenityCard';
 export {default as ShopProductCard} from './shopProductCard';
 export {default as ProductLogoEditor} from './productLogoEditor';
 export {default as StaffCard, STAFF_MENU_ACTION} from './staffCard';
+export {default as DealMessageCard} from './dealMessageCard';
