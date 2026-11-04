@@ -6,10 +6,10 @@ import {NAVIGATION} from '../../constants';
 import {CustomTab} from '../../components/molecules';
 import {
   HomeScreen,
-  MenuScreen,
   InvoicesScreen,
   MoreScreen,
   MessagesScreen,
+  BookingScreen,
 } from '../../screens/tabs';
 import {
   getBottomTabsNavigatorKey,
@@ -20,7 +20,7 @@ const BottomTabs = createBottomTabNavigator();
 
 const TAB_COMPONENTS = {
   [NAVIGATION.TABS.HOME_SCREEN]: HomeScreen,
-  [NAVIGATION.TABS.MENU_SCREEN]: MenuScreen,
+  [NAVIGATION.TABS.BOOKING_SCREEN]: BookingScreen,
   [NAVIGATION.TABS.INVOICES_SCREEN]: InvoicesScreen,
   [NAVIGATION.TABS.MESSAGES_SCREEN]: MessagesScreen,
   [NAVIGATION.TABS.MORE_SCREEN]: MoreScreen,

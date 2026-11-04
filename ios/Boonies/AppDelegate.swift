@@ -72,7 +72,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
                               willPresent notification: UNNotification,
                               withCompletionHandler completionHandler:
                               @escaping (UNNotificationPresentationOptions) -> Void) {
-    completionHandler([.alert, .badge, .sound])
+    // Foreground display is handled in JS via Notifee (`onMessage` in index.js).
+    // Returning [] avoids the system banner + Notifee duplicate.
+    completionHandler([])
   }
 
   func userNotificationCenter(_ center: UNUserNotificationCenter,

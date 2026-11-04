@@ -33,13 +33,14 @@ export const APIClient = (token = '') => {
       return response;
     },
     async function (error) {
+      const skipErrorToast = Boolean(error?.config?.skipErrorToast);
       if (
+        !skipErrorToast &&
         error?.response?.data?.message &&
         error?.response?.data?.message !== 'canceled'
       ) {
         errorToast(error.response.data.message);
       }
-
 
       if (error?.response?.status === 401) {
         setTimeout(() => {

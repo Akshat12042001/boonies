@@ -34,7 +34,7 @@ import {
   PlusIcon,
   UserOutlineIcon,
 } from '../../../components/svgs';
-import {COLORS, FORM_SCHEMA} from '../../../constants';
+import {COLORS, FORM_SCHEMA, NAVIGATION} from '../../../constants';
 import {
   makeCreateBillRequest,
   makeGetBillDetailsRequest,
@@ -312,7 +312,10 @@ const CreateInvoiceScreen = () => {
   ]);
 
   const handleBack = useCallback(() => {
-    navigation.goBack();
+    // Create invoice lives in the Common stack; reset must target the root Tabs stack.
+    navigation.navigate(NAVIGATION.STACKS.TABS, {
+      screen: NAVIGATION.TABS.INVOICES_SCREEN,
+    });
   }, [navigation]);
 
   const handleSubmit = useCallback(
@@ -383,7 +386,10 @@ const CreateInvoiceScreen = () => {
                 : 'CREATE_INVOICE.CREATED_SUCCESSFULLY',
             ),
         );
-        navigation.goBack();
+        // Create invoice lives in the Common stack; reset must target the root Tabs stack.
+        navigation.navigate(NAVIGATION.STACKS.TABS, {
+          screen: NAVIGATION.TABS.INVOICES_SCREEN,
+        });
       } catch {
         // APIClient displays the server error toast.
       } finally {

@@ -11,9 +11,8 @@ export default {
     },
     TABS: {
         HOME_SCREEN: 'Tabs-HomeScreen',
-        MENU_SCREEN: 'Tabs-MenuScreen',
+        BOOKING_SCREEN: 'Tabs-BookingScreen',
         INVOICES_SCREEN: 'Tabs-InvoicesScreen',
-        PROPERTIES_SCREEN: 'Tabs-PropertiesScreen',
         MORE_SCREEN: 'Tabs-MoreScreen',
         MESSAGES_SCREEN: 'Tabs-MessagesScreen'
     },
@@ -38,5 +37,6 @@ export default {
         CHAT_SCREEN: 'Common-ChatScreen',
         PROPERTIES_COMMON_SCREEN: 'Common-PropertiesCommonScreen',
         STAFF_MANAGEMENT_SCREEN: 'Common-StaffManagementScreen',
+        MENU_COMMON_SCREEN: 'Common-MenuCommonScreen',
     }
 };

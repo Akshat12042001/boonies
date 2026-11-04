@@ -19,6 +19,7 @@ class NotificationService {
 
 
     await notifee.displayNotification({
+      id: String(id || Date.now()),
       title: title,
       body: message,
       data: data,

@@ -27,7 +27,11 @@ const senderIdOf = message =>
 export const conversationIdOf = payload =>
   payload?.conversationId ||
   payload?.conversation?.id ||
+  payload?.deal?.conversationId ||
+  payload?.deal?.conversation?.id ||
+  payload?.newMessage?.conversationId ||
   payload?.message?.conversationId ||
+  payload?.latestOffer?.conversationId ||
   '';
 
 const personName = person =>

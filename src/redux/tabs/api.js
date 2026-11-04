@@ -30,6 +30,7 @@ const baseQuery = fetchBaseQuery({
   export const tabsApi = createApi({
     reducerPath: 'tabsApi',
     baseQuery: baseQuery,
+    tagTypes: ['HostDirectBookings'],
     endpoints: (builder) => ({
       getDashboard: builder.query({
         query: () => ENDPOINTS.DASHBOARD,
@@ -143,26 +144,36 @@ const baseQuery = fetchBaseQuery({
         }),
       }),
       getHostDirectBookings: builder.query({
-        query: data => ({
+        query: ({filterScope: _filterScope, ...params} = {}) => ({
           url: ENDPOINTS.HOST_DIRECT_BOOKINGS,
           method: 'GET',
-          params: data,
+          params,
         }),
-        serializeQueryArgs: ({endpointName}) => endpointName,
+        providesTags: ['HostDirectBookings'],
+        // One cache per filter set; page is merged into that cache.
+        serializeQueryArgs: ({endpointName, queryArgs}) => {
+          const {page: _page, ...filters} = queryArgs || {};
+          return `${endpointName}(${JSON.stringify(filters)})`;
+        },
         merge: (currentCache, newResponse, {arg}) => {
-          if (arg.page === 1) {
+          if (Number(arg?.page) === 1) {
+            return newResponse;
+          }
+
+          if (!currentCache?.data) {
             return newResponse;
           }
 
           const existingIds = new Set(
-            currentCache.data.map(booking => booking.id),
+            (currentCache.data || []).map(booking => booking.id),
           );
-          const nextBookings = newResponse.data.filter(
+          const nextBookings = (newResponse?.data || []).filter(
             booking => !existingIds.has(booking.id),
           );
 
-          currentCache.data.push(...nextBookings);
-          currentCache.meta = newResponse.meta;
+          currentCache.data = [...currentCache.data, ...nextBookings];
+          currentCache.meta = newResponse?.meta;
+          currentCache.success = newResponse?.success;
         },
         forceRefetch: ({currentArg, previousArg}) =>
           currentArg?.page !== previousArg?.page ||
@@ -171,7 +182,8 @@ const baseQuery = fetchBaseQuery({
           currentArg?.checkInFrom !== previousArg?.checkInFrom ||
           currentArg?.checkOutFrom !== previousArg?.checkOutFrom ||
           currentArg?.sortBy !== previousArg?.sortBy ||
-          currentArg?.sortOrder !== previousArg?.sortOrder,
+          currentArg?.sortOrder !== previousArg?.sortOrder ||
+          currentArg?.filterScope !== previousArg?.filterScope,
       }),
     }),
   });

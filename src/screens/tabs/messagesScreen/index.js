@@ -228,19 +228,30 @@ const MessagesScreen = () => {
         SocketService.create();
       }
 
+      // Leave any inbox-watched rooms so listing a thread never marks it read.
+      SocketService.clearWatchedConversations();
+
       setPage(1);
       refetch();
       refetchUnread();
 
+      const refreshInbox = () => {
+        setPage(1);
+        refetch();
+        refetchUnread();
+      };
+
+      // Do not join conversation rooms from the inbox — join_conversation can
+      // mark threads read server-side. Mark read only when opening chat.
       return SocketService.subscribe(event => {
         if (
           event === SOCKET_EVENTS.NEW_MESSAGE_NOTIFICATION ||
           event === SOCKET_EVENTS.MESSAGE_RECEIVED ||
-          event === SOCKET_EVENTS.MESSAGES_READ
+          event === SOCKET_EVENTS.MESSAGES_READ ||
+          event === SOCKET_EVENTS.DEAL_CREATED ||
+          event === SOCKET_EVENTS.DEAL_UPDATED
         ) {
-          setPage(1);
-          refetch();
-          refetchUnread();
+          refreshInbox();
         }
       });
     }, [refetch, refetchUnread]),

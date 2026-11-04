@@ -1,4 +1,4 @@
-import React, {memo, useCallback, useEffect, useMemo, useState} from 'react';
+import React, {memo, useCallback, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {useNavigation, useRoute} from '@react-navigation/native';
+import {useFocusEffect, useNavigation, useRoute} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
 import moment from 'moment';
 import {ScreenContainer, StyledText} from '../../../components/atoms';
@@ -21,7 +21,7 @@ import {
   TrendUpIcon,
   UserOutlineIcon,
 } from '../../../components/svgs';
-import {makeGetDealRequest} from '../../../api/common';
+import {makeGetDealRequest} from '../../../api/deals';
 import {COLORS} from '../../../constants';
 import {formatBookingPreviewResponse} from '../../../utils/booking';
 import PhotoGalleryModal from './photoGalleryModal';
@@ -156,7 +156,7 @@ const DealPreviewScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const {t} = useTranslation();
-  const dealId = route.params?.dealId;
+  const dealId = route.params?.dealId || route.params?.id || '';
   const [preview, setPreview] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -196,9 +196,11 @@ const DealPreviewScreen = () => {
     }
   }, [dealId]);
 
-  useEffect(() => {
-    loadPreview();
-  }, [loadPreview]);
+  useFocusEffect(
+    useCallback(() => {
+      loadPreview();
+    }, [loadPreview]),
+  );
 
   const checkIn = useMemo(
     () => formatStayDate(preview?.checkIn?.iso),

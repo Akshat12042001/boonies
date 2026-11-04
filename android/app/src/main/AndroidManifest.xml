@@ -29,12 +29,14 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
       </activity>
+      <!-- Used by FCM when app is background/killed (system tray). Must be white-on-transparent. -->
       <meta-data
-       android:name="com.google.firebase.messaging.default_notification_icon"
-       android:resource="@drawable/ic_notify" />
-       <meta-data
-       android:name="com.google.firebase.messaging.default_notification_color"
-       android:resource="@color/primary"
-       tools:replace="android:resource" />
+        android:name="com.google.firebase.messaging.default_notification_icon"
+        android:resource="@drawable/ic_notify"
+        tools:replace="android:resource" />
+      <meta-data
+        android:name="com.google.firebase.messaging.default_notification_color"
+        android:resource="@color/primary"
+        tools:replace="android:resource" />
     </application>
 </manifest>

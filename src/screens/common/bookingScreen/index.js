@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {ActivityIndicator, FlatList, RefreshControl, TouchableOpacity, View} from 'react-native';
 import moment from 'moment';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
@@ -89,19 +89,43 @@ const BookingScreen = () => {
   const [isPopoverLoading, setIsPopoverLoading] = useState(false);
 
   const debouncedSearch = useDebouncedValue(searchQuery, 400);
+  const isActiveUpcoming =
+    filterScope === BOOKING_LIST_FILTER_SCOPE.ACTIVE_UPCOMING;
+
+  const filterKey = useMemo(
+    () =>
+      JSON.stringify({
+        search: String(debouncedSearch || '').trim(),
+        checkInFrom: checkInFrom
+          ? moment(checkInFrom).format('YYYY-MM-DD')
+          : null,
+        checkOutFrom: checkOutFrom
+          ? moment(checkOutFrom).format('YYYY-MM-DD')
+          : null,
+        isActiveUpcoming,
+      }),
+    [checkInFrom, checkOutFrom, debouncedSearch, isActiveUpcoming],
+  );
+  const filterKeyRef = useRef(filterKey);
+  const requestPage = filterKeyRef.current === filterKey ? page : 1;
 
   const queryParams = useMemo(
     () =>
       getHostDirectBookingsQueryParams({
-        page,
+        page: requestPage,
         limit: PAGE_LIMIT,
         search: debouncedSearch,
         checkInFrom,
         checkOutFrom,
-        isActiveUpcoming:
-          filterScope === BOOKING_LIST_FILTER_SCOPE.ACTIVE_UPCOMING,
+        isActiveUpcoming,
       }),
-    [checkInFrom, checkOutFrom, debouncedSearch, filterScope, page],
+    [
+      checkInFrom,
+      checkOutFrom,
+      debouncedSearch,
+      isActiveUpcoming,
+      requestPage,
+    ],
   );
 
   const {
@@ -110,7 +134,9 @@ const BookingScreen = () => {
     isFetching,
     isLoading,
     refetch,
-  } = useGetHostDirectBookingsQuery(queryParams);
+  } = useGetHostDirectBookingsQuery(queryParams, {
+    refetchOnMountOrArgChange: true,
+  });
 
   const bookings = useMemo(
     () => formatHostDirectBookings(bookingsResponse),
@@ -118,16 +144,19 @@ const BookingScreen = () => {
   );
 
   const hasNextPage =
-    (bookingsResponse?.meta?.page || page) <
+    (bookingsResponse?.meta?.page || requestPage) <
     (bookingsResponse?.meta?.totalPages || 1);
 
-    useFocusEffect(useCallback(() => {
+  useFocusEffect(
+    useCallback(() => {
       refetch();
-    }, [refetch]));
+    }, [refetch]),
+  );
 
   useEffect(() => {
+    filterKeyRef.current = filterKey;
     setPage(1);
-  }, [checkInFrom, checkOutFrom, debouncedSearch, filterScope]);
+  }, [filterKey]);
 
   const handleBack = useCallback(() => {
     navigation.goBack();
@@ -370,12 +399,13 @@ const BookingScreen = () => {
   }, [isFetching, isPullRefreshing]);
 
   const showListSkeleton =
-    (isLoading || (isFetching && page === 1)) && !isPullRefreshing;
+    (isLoading || (isFetching && requestPage === 1 && !bookings.length)) &&
+    !isPullRefreshing;
 
   const listData = showListSkeleton ? [] : bookings;
 
   const renderFooter = useCallback(() => {
-    if (!isFetching || page === 1) {
+    if (!isFetching || requestPage === 1) {
       return null;
     }
 
@@ -384,7 +414,7 @@ const BookingScreen = () => {
         <ActivityIndicator color={COLORS.LOGIN_PRIMARY} />
       </View>
     );
-  }, [isFetching, page]);
+  }, [isFetching, requestPage]);
 
   const renderEmpty = useCallback(() => {
     if (showListSkeleton) {

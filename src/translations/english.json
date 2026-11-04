@@ -5,7 +5,8 @@
     "TABS": {
         "HOME": "Home",
         "MENU": "Menu",
-        "INVOICES": "Invoices",
+        "BOOKING": "Bookings",
+        "INVOICES": "Bills",
         "PROPERTIES": "Properties",
         "MORE": "More",
         "MESSAGES": "Messages"
@@ -186,6 +187,11 @@
             "STAY": "2 nights · created 20 Jul",
             "AMOUNT": "₹7,900"
         }
+    },
+    "BOOKING": {
+        "TITLE": "Bookings",
+        "SUBTITLE": "{{count}} bookings · direct stays for your guests",
+        "NEW": "New"
     },
     "MENU": {
         "TITLE": "Menu",

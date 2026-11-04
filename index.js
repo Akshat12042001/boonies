@@ -29,16 +29,31 @@ const showRemoteNotification = async remoteMessage => {
     return;
   }
 
+  const data = remoteMessage?.data || {};
+  // Use backend id from data only — never the outer FCM messageId
+  // (e.g. "0:1793…%…"), which is not a valid app/notification UUID.
+  const dataMessageId = data.messageId || data.notificationId || '';
+
+  // Android Notifee requires a numeric display id; keep the real id in `data`.
+  const displayId = String(Date.now());
+
   await NotificationService.showNotification(
-    0,
+    displayId,
     notification.title,
     notification.body,
-    remoteMessage.data,
+    {
+      ...data,
+      ...(dataMessageId ? {messageId: String(dataMessageId)} : {}),
+    },
   );
 };
 
-onMessage(messaging, showRemoteNotification);
-setBackgroundMessageHandler(messaging, async () => {});
+// Register once — Fast Refresh can otherwise stack listeners.
+if (!global.__BOONIES_FCM_FOREGROUND_BOUND__) {
+  global.__BOONIES_FCM_FOREGROUND_BOUND__ = true;
+  onMessage(messaging, showRemoteNotification);
+  setBackgroundMessageHandler(messaging, async () => {});
+}
 
 
 function HeadlessCheck({isHeadless}) {

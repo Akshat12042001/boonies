@@ -9,11 +9,11 @@ import {COLORS, NAVIGATION} from '../../../constants';
 import {
   HomeIcon,
   InvoicesIcon,
-  PropertyIcon,
   MoreIcon,
-  MenuIcon,
   MessagesIcon,
+  CalendarIcon,
 } from '../../svgs';
+import {refreshConversationsTabCache} from '../../../api/messaging';
 import {useGetUnreadCountQuery} from '../../../redux/tabs';
 import {SocketService} from '../../../services';
 import {SOCKET_EVENTS} from '../../../services/socketService';
@@ -22,11 +22,10 @@ import {isStaffUser} from '../../../utils/staff';
 
 const TAB_META_BY_NAME = {
   [NAVIGATION.TABS.HOME_SCREEN]: {title: 'TABS.HOME'},
-  [NAVIGATION.TABS.MENU_SCREEN]: {title: 'TABS.MENU'},
   [NAVIGATION.TABS.INVOICES_SCREEN]: {title: 'TABS.INVOICES'},
   [NAVIGATION.TABS.MESSAGES_SCREEN]: {title: 'TABS.MESSAGES'},
   [NAVIGATION.TABS.MORE_SCREEN]: {title: 'TABS.MORE'},
-  [NAVIGATION.TABS.PROPERTIES_SCREEN]: {title: 'TABS.PROPERTIES'},
+  [NAVIGATION.TABS.BOOKING_SCREEN]: {title: 'TABS.BOOKING'},
 };
 
 const CustomTabBar = ({state, navigation}) => {
@@ -34,10 +33,9 @@ const CustomTabBar = ({state, navigation}) => {
   const {t} = useTranslation();
   const user = useSelector(state => state.auth.user);
   const skipUnread = isStaffUser(user);
-  const {data: unreadData, refetch: refetchUnread} = useGetUnreadCountQuery(
-    undefined,
-    {skip: skipUnread},
-  );
+  const {data: unreadData} = useGetUnreadCountQuery(undefined, {
+    skip: skipUnread,
+  });
   const unreadCount = Number(unreadData?.unreadCount || 0);
 
   const visibleTabNames = useMemo(
@@ -63,12 +61,15 @@ const CustomTabBar = ({state, navigation}) => {
       if (
         event === SOCKET_EVENTS.NEW_MESSAGE_NOTIFICATION ||
         event === SOCKET_EVENTS.MESSAGE_RECEIVED ||
-        event === SOCKET_EVENTS.MESSAGES_READ
+        event === SOCKET_EVENTS.MESSAGES_READ ||
+        event === SOCKET_EVENTS.DEAL_UPDATED ||
+        event === SOCKET_EVENTS.DEAL_CREATED
       ) {
-        refetchUnread();
+        // Keep unread badge and inbox list in sync even when Messages is not focused.
+        refreshConversationsTabCache().catch(() => {});
       }
     });
-  }, [refetchUnread, skipUnread]);
+  }, [skipUnread]);
 
   useEffect(() => {
     const focusedRoute = state.routes[state.index];
@@ -111,12 +112,10 @@ const CustomTabBar = ({state, navigation}) => {
     switch (route.name) {
       case NAVIGATION.TABS.HOME_SCREEN:
         return <HomeIcon color={color} />;
-      case NAVIGATION.TABS.MENU_SCREEN:
-        return <MenuIcon color={color} />;
+      case NAVIGATION.TABS.BOOKING_SCREEN:
+        return <CalendarIcon color={color} size={20} />;
       case NAVIGATION.TABS.INVOICES_SCREEN:
         return <InvoicesIcon color={color} />;
-      case NAVIGATION.TABS.PROPERTIES_SCREEN:
-        return <PropertyIcon color={color} />;
       case NAVIGATION.TABS.MORE_SCREEN:
         return <MoreIcon color={color} />;
       case NAVIGATION.TABS.MESSAGES_SCREEN:

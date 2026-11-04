@@ -7,9 +7,9 @@ export const BOTTOM_TAB_CONFIG = [
     title: 'TABS.HOME',
   },
   {
-    name: NAVIGATION.TABS.MENU_SCREEN,
-    title: 'TABS.MENU',
-    module: STAFF_MODULE.FOOD_MENU,
+    name: NAVIGATION.TABS.BOOKING_SCREEN,
+    title: 'TABS.BOOKING',
+    modules: [STAFF_MODULE.CALENDAR, STAFF_MODULE.DIRECT_BOOKINGS],
   },
   {
     name: NAVIGATION.TABS.INVOICES_SCREEN,
@@ -32,6 +32,13 @@ export const isBottomTabVisible = (user, tab) => {
     return false;
   }
   if (tab.module && !hasStaffModule(user, tab.module)) {
+    return false;
+  }
+  if (
+    Array.isArray(tab.modules) &&
+    tab.modules.length > 0 &&
+    !tab.modules.some(moduleId => hasStaffModule(user, moduleId))
+  ) {
     return false;
   }
   return true;

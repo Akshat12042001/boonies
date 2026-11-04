@@ -9,7 +9,9 @@ import {ChevronRightIcon} from '../../../components/svgs';
 import {makeLogoutRequest} from '../../../api/auth';
 import {COLORS, NAVIGATION} from '../../../constants';
 import {reset} from '../../../redux/auth/auth.reducer';
+import {SocketService} from '../../../services';
 import {showAlert} from '../../../utils/alerts';
+import {unregisterPushDevice} from '../../../utils/pushDevice';
 import {hasAnyStaffModule, isStaffUser} from '../../../utils/staff';
 import DATA from './config';
 import styles from './styles';
@@ -45,12 +47,19 @@ const MoreScreen = () => {
   const subtitle = user?.email || user?.firstName || t('MORE.SUBTITLE');
 
   const handleLogoutConfirm = useCallback(async () => {
+    setIsLoggingOut(true);
     try {
-      setIsLoggingOut(true);
+      await unregisterPushDevice();
+    } catch {
+      // Continue logout even if push unregister fails.
+    }
+
+    try {
       await makeLogoutRequest();
     } catch {
       // APIClient displays the server error toast.
     } finally {
+      SocketService.disconnect();
       dispatch(reset());
       setIsLoggingOut(false);
     }
@@ -97,6 +106,11 @@ const MoreScreen = () => {
       case 7:
         navigation.navigate(NAVIGATION.STACKS.COMMON,{
           screen: NAVIGATION.COMMON.STAFF_MANAGEMENT_SCREEN,
+        });
+        break;
+      case 8:
+        navigation.navigate(NAVIGATION.STACKS.COMMON,{
+          screen: NAVIGATION.COMMON.MENU_COMMON_SCREEN,
         });
         break;
       case 3:

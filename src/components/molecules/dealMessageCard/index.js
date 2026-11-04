@@ -82,8 +82,14 @@ const DealMessageCard = ({
   }, [deal?.id]);
 
   const handleSelectSuggestion = useCallback(option => {
-    setSelectedPercent(option.percent);
-    setCustomPrice(String(option.price));
+    setSelectedPercent(prev => {
+      if (prev === option.percent) {
+        setCustomPrice('');
+        return null;
+      }
+      setCustomPrice(String(option.price));
+      return option.percent;
+    });
   }, []);
 
   const handleChangeCustomPrice = useCallback(text => {
@@ -91,6 +97,9 @@ const DealMessageCard = ({
     setCustomPrice(digitsOnly);
     setSelectedPercent(null);
   }, []);
+
+  const hasPriceDraft =
+    selectedPercent != null || String(customPrice).trim().length > 0;
 
   const handleAccept = useCallback(() => {
     if (!canRespond || isSubmitting) {
@@ -285,7 +294,7 @@ const DealMessageCard = ({
               </>
             ) : null}
 
-            {canRespond ? (
+            {canRespond && !hasPriceDraft ? (
               <View style={styles.actionsRow}>
                 <TouchableOpacity
                   accessibilityRole="button"

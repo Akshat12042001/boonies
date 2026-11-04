@@ -3,6 +3,7 @@ import {ActivityIndicator, TouchableOpacity, View} from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useTranslation} from 'react-i18next';
+import {useDispatch} from 'react-redux';
 import {Formik} from 'formik';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import moment from 'moment';
@@ -18,6 +19,7 @@ import {
   makeGetHostListingsDropdownRequest,
   makeUpdateHostBookingRequest,
 } from '../../../api/common';
+import {tabsApi} from '../../../redux/tabs';
 import {errorToast, successToast} from '../../../utils/alerts';
 import {
   buildDirectBookingNote,
@@ -173,6 +175,7 @@ const MealCheckboxRow = ({title, subtitle, checked, isLast = false, onToggle}) =
 const CreateBookingScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
+  const dispatch = useDispatch();
   const {t} = useTranslation();
   const insets = useSafeAreaInsets();
   const inputRefs = useRef(FORM_SCHEMA.CREATE_BOOKING.fields.map(() => null));
@@ -412,6 +415,8 @@ const CreateBookingScreen = () => {
                 : 'CREATE_BOOKING.CREATED_SUCCESSFULLY',
             ),
         );
+        // Refresh booking list caches before returning so the list is up to date.
+        dispatch(tabsApi.util.invalidateTags(['HostDirectBookings']));
         navigation.goBack();
       } catch {
         // APIClient displays the server error toast.
@@ -426,6 +431,7 @@ const CreateBookingScreen = () => {
       calendarUnavailableDates,
       children,
       dinnerIncluded,
+      dispatch,
       isEditMode,
       navigation,
       pets,

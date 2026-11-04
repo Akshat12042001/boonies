@@ -5,9 +5,11 @@ import {tabsApi} from '../redux/tabs/api';
 const ENDPOINTS = {
   CONVERSATIONS: '/messaging/conversations',
   UNREAD_COUNT: '/messaging/unread-count',
+  NOTIFICATIONS: '/notification',
 };
 
 export const CONVERSATIONS_QUERY_ARGS = {page: 1, limit: 20};
+export const NOTIFICATION_QUERY_ARGS = {limit: 10, page: 1};
 
 export const makeGetConversationsRequest = (params = {}) => {
   return APIClient()
@@ -39,6 +41,12 @@ export const makeGetUnreadCountRequest = () => {
     .then(res => res.data);
 };
 
+export const makeGetNotificationsRequest = (params = NOTIFICATION_QUERY_ARGS) => {
+  return APIClient()
+    .get(ENDPOINTS.NOTIFICATIONS, {params})
+    .then(res => res.data);
+};
+
 export const makeMarkConversationReadRequest = ({
   conversationId,
   messageId,
@@ -49,6 +57,31 @@ export const makeMarkConversationReadRequest = ({
       messageId ? {messageId} : {},
     )
     .then(res => res.data);
+};
+
+export const refreshUnreadAndNotificationsCache = async () => {
+  const [unreadResponse, notificationsResponse] = await Promise.all([
+    makeGetUnreadCountRequest(),
+    makeGetNotificationsRequest(NOTIFICATION_QUERY_ARGS),
+  ]);
+
+  const dispatch = getStore()?.dispatch;
+  if (!dispatch) {
+    return {unreadResponse, notificationsResponse};
+  }
+
+  dispatch(
+    tabsApi.util.upsertQueryData('getUnreadCount', undefined, unreadResponse),
+  );
+  dispatch(
+    tabsApi.util.upsertQueryData(
+      'getNotifications',
+      NOTIFICATION_QUERY_ARGS,
+      notificationsResponse,
+    ),
+  );
+
+  return {unreadResponse, notificationsResponse};
 };
 
 export const refreshConversationsTabCache = async () => {

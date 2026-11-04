@@ -7,10 +7,21 @@ import {useDispatch} from 'react-redux';
 import {ScreenContainer, StyledText} from '../../../components/atoms';
 import {NotificationCard, ScreenHeader} from '../../../components/molecules';
 import {makeMarkNotificationReadRequest} from '../../../api/common';
-import {COLORS} from '../../../constants';
+import {COLORS, NAVIGATION} from '../../../constants';
 import {tabsApi, useGetNotificationsQuery} from '../../../redux/tabs/api';
 import {errorToast} from '../../../utils/alerts';
 import styles from './styles';
+
+const getDealIdFromRedirectUrl = redirectUrl => {
+  const value = String(redirectUrl || '');
+  const match = value.match(/\/deals\/([^/?#]+)/i);
+  return match?.[1] || '';
+};
+
+const getNotificationDealId = item =>
+  item?.dealId ||
+  getDealIdFromRedirectUrl(item?.redirectUrl) ||
+  '';
 
 const NOTIFICATION_QUERY = {limit: 10, page: 1};
 
@@ -97,6 +108,20 @@ const NotificationScreen = () => {
     [t],
   );
 
+  const navigateFromNotification = useCallback(
+    item => {
+      const dealId = getNotificationDealId(item);
+      if (!dealId) {
+        return;
+      }
+
+      navigation.navigate(NAVIGATION.COMMON.DEAL_PREVIEW_SCREEN, {
+        dealId: String(dealId),
+      });
+    },
+    [navigation],
+  );
+
   const handlePressNotification = useCallback(
     async item => {
       if (!item?.id || markingId) {
@@ -105,34 +130,37 @@ const NotificationScreen = () => {
 
       try {
         setMarkingId(item.id);
-        await makeMarkNotificationReadRequest(item.id);
-        dispatch(
-          tabsApi.util.updateQueryData(
-            'getNotifications',
-            NOTIFICATION_QUERY,
-            draft => {
-              const notification = draft?.data?.find(
-                entry => entry.id === item.id,
-              );
+        if (item.status === false) {
+          await makeMarkNotificationReadRequest(item.id);
+          dispatch(
+            tabsApi.util.updateQueryData(
+              'getNotifications',
+              NOTIFICATION_QUERY,
+              draft => {
+                const notification = draft?.data?.find(
+                  entry => entry.id === item.id,
+                );
 
-              if (!notification) {
-                return;
-              }
+                if (!notification) {
+                  return;
+                }
 
-              notification.status = true;
-              notification.readAt = moment().format('YYYY-MM-DD');
-            },
-          ),
-        );
+                notification.status = true;
+                notification.readAt = moment().format('YYYY-MM-DD');
+              },
+            ),
+          );
+        }
       } catch (error) {
         if (!error?.response) {
           errorToast(t('NOTIFICATION.MARK_READ_FAILED'));
         }
       } finally {
         setMarkingId(null);
+        navigateFromNotification(item);
       }
     },
-    [dispatch, markingId, t],
+    [dispatch, markingId, navigateFromNotification, t],
   );
 
   const renderItem = useCallback(

@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useMemo, useRef, useState} from 'react';
 import {FlatList, ScrollView, TouchableOpacity, View} from 'react-native';
 import Skeleton from 'react-native-reanimated-skeleton';
 import {useTranslation} from 'react-i18next';
@@ -44,10 +44,9 @@ import {
   STAFF_MODULE,
 } from '../../../utils/staff';
 import notifee, {AuthorizationStatus} from '@notifee/react-native';
-import {getMessaging, getToken} from '@react-native-firebase/messaging';
 import {showAlert} from '../../../utils/alerts';
 import {Linking} from 'react-native';
-import DeviceInfo from 'react-native-device-info';
+import {registerPushDevice} from '../../../utils/pushDevice';
 
 const NOTIFICATION_QUERY = {limit: 10, page: 1};
 const POPOVER_CLOSE_DELAY_MS = 500;
@@ -337,48 +336,50 @@ const HomeScreen = () => {
     }
   }, [dispatch]);
 
+  const requestUserPermission = useCallback(async () => {
+    try {
+      const settings = await notifee.requestPermission();
+
+      if (settings.authorizationStatus === AuthorizationStatus.DENIED) {
+        showAlert({
+          title: 'Permission Denied',
+          message: 'Please enable notifications to receive updates',
+          onSuccess: () => {
+            Linking.openSettings();
+          },
+          isConfirmationPopup: true,
+          t,
+        });
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }, [t]);
+
+  const syncPushDevice = useCallback(async () => {
+    const allowed = await requestUserPermission();
+    if (!allowed) {
+      return;
+    }
+
+    try {
+      await registerPushDevice();
+    } catch (error) {
+      // Keep home usable if push registration fails.
+    }
+  }, [requestUserPermission]);
+
   useFocusEffect(
     useCallback(() => {
       setGreetingKey(getTimeBasedGreetingKey());
       fetchMe();
       refetchNotifications();
-    }, [fetchMe, refetchNotifications]),
+      syncPushDevice();
+    }, [fetchMe, refetchNotifications, syncPushDevice]),
   );
-
-  useEffect(() => {
-    requestUserPermission();
-  }, [requestUserPermission]);
-
-  const requestUserPermission = useCallback(async () => {
-    try {
-      const settings = await notifee.requestPermission();
-
-    if (settings.authorizationStatus === AuthorizationStatus.DENIED) {
-      showAlert({
-        title: 'Permission Denied',
-        message: 'Please enable notifications to receive updates',
-        onSuccess: () => {
-          Linking.openSettings();
-        },
-        isConfirmationPopup: true,
-        t,
-      });
-    } else {
-      getToken(getMessaging())
-        .then(token => {
-          console.log('FCM token:', token);
-        })
-        .catch(() => {});
-
-        DeviceInfo.getDeviceToken().then((deviceToken) => {
-          console.log('Device token:', deviceToken);
-        });
-    }
-    } catch (error) {
-      console.log({error});
-    }
-    
-  }, [t]);
 
   const openPropertyDetail = useCallback(
     (propertyId, isListingView = false) => {

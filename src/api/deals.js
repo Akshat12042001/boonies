@@ -44,7 +44,10 @@ export const makeGetDealRequest = dealId => {
 
 export const makeGetConversationDealRequest = conversationId => {
   return APIClient()
-    .get(`${ENDPOINTS.DEALS}/conversation/${conversationId}`)
+    .get(`${ENDPOINTS.DEALS}/conversation/${conversationId}`, {
+      // Optional for threads without a deal; avoid toasting validation/404 noise.
+      skipErrorToast: true,
+    })
     .then(res => res.data);
 };
 

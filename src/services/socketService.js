@@ -43,6 +43,8 @@ const SERVER_EVENTS = [
 
 let socket;
 let activeConversationId = '';
+const joinedConversationIds = new Set();
+const watchedConversationIds = new Set();
 let suppressReconnect = false;
 let connected = false;
 let authenticated = false;
@@ -68,27 +70,26 @@ const setConnectionState = (nextConnected, nextAuthenticated = authenticated) =>
   authenticated = nextAuthenticated;
 };
 
-const rejoinActiveConversation = () => {
-  if (!activeConversationId || !socket?.connected) {
+const rejoinConversations = () => {
+  if (!socket?.connected || !joinedConversationIds.size) {
     return;
   }
 
-  socket.emit(SOCKET_EVENTS.JOIN_CONVERSATION, {
-    conversationId: activeConversationId,
+  joinedConversationIds.forEach(conversationId => {
+    socket.emit(SOCKET_EVENTS.JOIN_CONVERSATION, {conversationId});
   });
 };
 
 const handleConnect = () => {
-  setConnectionState(true, false);
+  setConnectionState(true, authenticated);
   lastError = null;
-  console.log('SOCKET_CONNECTED', socket?.id);
   notify(SOCKET_EVENTS.CONNECT, {id: socket?.id});
-  rejoinActiveConversation();
+  // Some backends auth via handshake only (no `authenticated` event).
+  rejoinConversations();
 };
 
 const handleDisconnect = reason => {
   setConnectionState(false, false);
-  console.log('SOCKET_DISCONNECTED', reason);
   notify(SOCKET_EVENTS.DISCONNECT, reason);
 
   if (reason === 'io server disconnect' && !suppressReconnect) {
@@ -101,7 +102,6 @@ const handleDisconnect = reason => {
 const handleConnectError = error => {
   setConnectionState(false, false);
   lastError = error;
-  console.log('SOCKET_ERR', error?.message || error);
   notify(SOCKET_EVENTS.CONNECT_ERROR, error);
 };
 
@@ -109,6 +109,8 @@ const handleAuthenticated = payload => {
   authenticated = true;
   lastError = null;
   notify(SOCKET_EVENTS.AUTHENTICATED, payload);
+  // Server only accepts room joins after auth.
+  rejoinConversations();
 };
 
 const handleUnauthorized = payload => {
@@ -128,7 +130,20 @@ const forwardServerEvent = event => payload => {
   notify(event, payload);
 };
 
+const CORE_EVENTS = [
+  SOCKET_EVENTS.CONNECT,
+  SOCKET_EVENTS.DISCONNECT,
+  SOCKET_EVENTS.CONNECT_ERROR,
+  SOCKET_EVENTS.AUTHENTICATED,
+  SOCKET_EVENTS.UNAUTHORIZED,
+  SOCKET_EVENTS.ERROR,
+];
+
 const bindSocket = nextSocket => {
+  [...CORE_EVENTS, ...SERVER_EVENTS].forEach(event => {
+    nextSocket.off(event);
+  });
+
   nextSocket.on(SOCKET_EVENTS.CONNECT, handleConnect);
   nextSocket.on(SOCKET_EVENTS.DISCONNECT, handleDisconnect);
   nextSocket.on(SOCKET_EVENTS.CONNECT_ERROR, handleConnectError);
@@ -161,17 +176,14 @@ const emitEvent = (event, payload) => {
 const SocketService = {
   connect: () => {
     const token = getAccessToken();
-    const url = getSocketUrl();
-    console.log('SOCKET_URL', url);
+    const url = getSocketUrl(); 
 
     if (!token) {
       lastError = {message: 'Missing access token'};
-      console.log('SOCKET_ERR', lastError.message);
       return null;
     }
 
     if (socket?.connected) {
-      console.log('SOCKET_ALREADY_CONNECTED', socket.id);
       return socket;
     }
 
@@ -192,15 +204,31 @@ const SocketService = {
     return socket;
   },
   create: () => SocketService.connect(),
+  // Force re-bind listeners if the process kept a stale socket instance.
+  ensureListeners: () => {
+    if (!socket) {
+      return SocketService.connect();
+    }
+    bindSocket(socket);
+    if (socket.connected && authenticated) {
+      rejoinConversations();
+    } else if (!socket.connected) {
+      socket.connect();
+    }
+    return socket;
+  },
   disconnect: () => {
     suppressReconnect = true;
     activeConversationId = '';
+    joinedConversationIds.clear();
+    watchedConversationIds.clear();
     socket?.disconnect();
   },
   isConnected: () => !!socket?.connected || connected,
   isAuthenticated: () => authenticated,
   getError: () => lastError,
   getActiveConversationId: () => activeConversationId,
+  getJoinedConversationIds: () => Array.from(joinedConversationIds),
   subscribe: listener => {
     listeners.add(listener);
     return () => {
@@ -208,21 +236,79 @@ const SocketService = {
     };
   },
   joinConversation: conversationId => {
-    if (!conversationId) {
+    const roomId = String(conversationId || '');
+    if (!roomId) {
       return false;
     }
 
-    if (activeConversationId && activeConversationId !== conversationId) {
-      emitEvent(SOCKET_EVENTS.LEAVE_CONVERSATION, {
-        conversationId: activeConversationId,
-      });
+    activeConversationId = roomId;
+    const alreadyJoined = joinedConversationIds.has(roomId);
+    joinedConversationIds.add(roomId);
+    if (alreadyJoined) {
+      return true;
     }
 
-    activeConversationId = conversationId;
-    return emitEvent(SOCKET_EVENTS.JOIN_CONVERSATION, {conversationId});
+    return emitEvent(SOCKET_EVENTS.JOIN_CONVERSATION, {
+      conversationId: roomId,
+    });
+  },
+  // Inbox watches many rooms so deal_updated (room-scoped) can refresh the list.
+  syncWatchedConversations: conversationIds => {
+    const nextIds = new Set(
+      (Array.isArray(conversationIds) ? conversationIds : [])
+        .map(id => String(id || ''))
+        .filter(Boolean),
+    );
+
+    Array.from(watchedConversationIds).forEach(conversationId => {
+      if (nextIds.has(conversationId)) {
+        return;
+      }
+
+      watchedConversationIds.delete(conversationId);
+      if (activeConversationId === conversationId) {
+        return;
+      }
+
+      if (!joinedConversationIds.has(conversationId)) {
+        return;
+      }
+
+      joinedConversationIds.delete(conversationId);
+      emitEvent(SOCKET_EVENTS.LEAVE_CONVERSATION, {conversationId});
+    });
+
+    nextIds.forEach(conversationId => {
+      watchedConversationIds.add(conversationId);
+      if (joinedConversationIds.has(conversationId)) {
+        return;
+      }
+
+      joinedConversationIds.add(conversationId);
+      emitEvent(SOCKET_EVENTS.JOIN_CONVERSATION, {conversationId});
+    });
+
+    return nextIds.size > 0;
+  },
+  clearWatchedConversations: () => {
+    const watchedIds = Array.from(watchedConversationIds);
+    watchedConversationIds.clear();
+
+    watchedIds.forEach(conversationId => {
+      if (activeConversationId === conversationId) {
+        return;
+      }
+
+      if (!joinedConversationIds.has(conversationId)) {
+        return;
+      }
+
+      joinedConversationIds.delete(conversationId);
+      emitEvent(SOCKET_EVENTS.LEAVE_CONVERSATION, {conversationId});
+    });
   },
   leaveConversation: conversationId => {
-    const roomId = conversationId || activeConversationId;
+    const roomId = String(conversationId || activeConversationId || '');
     if (!roomId) {
       return false;
     }
@@ -231,7 +317,15 @@ const SocketService = {
       activeConversationId = '';
     }
 
-    return emitEvent(SOCKET_EVENTS.LEAVE_CONVERSATION, {conversationId: roomId});
+    // Keep the room if the messages inbox is still watching it.
+    if (watchedConversationIds.has(roomId)) {
+      return true;
+    }
+
+    joinedConversationIds.delete(roomId);
+    return emitEvent(SOCKET_EVENTS.LEAVE_CONVERSATION, {
+      conversationId: roomId,
+    });
   },
   sendMessage: payload =>
     new Promise((resolve, reject) => {
@@ -294,14 +388,6 @@ const SocketService = {
     emitEvent(SOCKET_EVENTS.TYPING_START, {conversationId}),
   stopTyping: conversationId =>
     emitEvent(SOCKET_EVENTS.TYPING_STOP, {conversationId}),
-  notifyDealUpdated: (conversationId, deal) => {
-    const payload = {conversationId};
-    if (deal) {
-      payload.deal = deal;
-    }
-
-    return emitEvent(SOCKET_EVENTS.DEAL_UPDATED, payload);
-  },
 };
 
 export default SocketService;

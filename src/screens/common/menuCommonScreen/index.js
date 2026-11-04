@@ -15,7 +15,7 @@ import {
   StyledText,
 } from '../../../components/atoms';
 import {DeleteMenuModal, MenuPdfPreviewModal} from '../../../components/modals';
-import {MenuCard} from '../../../components/molecules';
+import {MenuCard, ScreenHeader} from '../../../components/molecules';
 import {MENU_CARD_ACTION} from '../../../components/molecules/menuCard';
 import {PlusIcon} from '../../../components/svgs';
 import {COLORS, NAVIGATION, SCREEN} from '../../../constants';
@@ -53,7 +53,7 @@ const MENU_SKELETON_LAYOUT = Array.from({length: 4}, (_, index) => ({
 
 const MenuSeparator = () => <View style={styles.separator} />;
 
-const MenuScreen = () => {
+const MenuCommonScreen = () => {
   const {t} = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
@@ -321,28 +321,26 @@ const MenuScreen = () => {
   return (
     <ScreenContainer noPaddingTop noPaddingBottom>
       <View style={styles.screen}>
-        <View style={headerStyle}>
-          <View style={styles.topRow}>
-            <StyledText color={COLORS.SURFACE} variant="bold" size={20}>
-              {t('MENU.TITLE')}
-            </StyledText>
-            <TouchableOpacity
-              accessibilityRole="button"
-              onPress={handleCreateMenu}
-              style={styles.newButton}>
-              <PlusIcon />
-              <StyledText color={COLORS.PRIMARY} variant="bold" size={12}>
-                {t('MENU.NEW')}
-              </StyledText>
-            </TouchableOpacity>
-          </View>
-          <StyledText
-            color={COLORS.HEADER_TEXT_MUTED}
-            size={12}
-            containerStyle={styles.subtitle}>
-            {subtitle}
+      <ScreenHeader
+        title={t('MENU.TITLE')}
+        subtitle={t('MENU.SUBTITLE', {count: menus.length || 0})}
+        onBack={() => navigation.goBack()}
+        rightComponent={
+          <TouchableOpacity
+          accessibilityRole="button"
+          style={styles.newButton}
+          onPress={() =>
+            navigation.navigate(NAVIGATION.STACKS.COMMON, {
+              screen: NAVIGATION.COMMON.CREATE_MENU_SCREEN,
+            })
+          }>
+          <PlusIcon />
+          <StyledText color={COLORS.PRIMARY} variant="bold" size={12}>
+            {t('MENU.NEW')}
           </StyledText>
-        </View>
+        </TouchableOpacity>
+        }
+      />
 
         <FlatList
           data={menus}
@@ -390,4 +388,4 @@ const MenuScreen = () => {
   );
 };
 
-export default MenuScreen;
+export default MenuCommonScreen;

@@ -6,17 +6,18 @@ import {
   DealIcon,
   PropertyIcon,
   StaffIcon,
+  MenuIcon,
 } from '../../../components/svgs';
 import {COLORS} from '../../../constants';
 import {STAFF_MODULE} from '../../../utils/staff';
 
 const DATA = [
-  {
-    id: 1,
-    title: 'Bookings',
-    icon: <CalendarIcon color={COLORS.PRIMARY} />,
-    modules: [STAFF_MODULE.CALENDAR, STAFF_MODULE.DIRECT_BOOKINGS],
-  },
+  // {
+  //   id: 1,
+  //   title: 'Bookings',
+  //   icon: <CalendarIcon color={COLORS.PRIMARY} />,
+  //   modules: [STAFF_MODULE.CALENDAR, STAFF_MODULE.DIRECT_BOOKINGS],
+  // },
   {
     id: 2,
     title: 'Support',
@@ -45,6 +46,12 @@ const DATA = [
     title: 'Staff Management',
     icon: <StaffIcon color={COLORS.PRIMARY} size={20} />,
     hostOnly: true,
+  },
+  {
+    id: 8,
+    title: 'Menu',
+    icon: <MenuIcon color={COLORS.PRIMARY} size={20} />,
+    modules: [STAFF_MODULE.FOOD_MENU],
   },
   {
     id: 3,

@@ -76,6 +76,7 @@ export const STAFF_MODULE = {
   DIRECT_BOOKINGS: 'direct_bookings',
   LISTINGS: 'listings',
   CALENDAR: 'calendar',
+  MENU: 'menu',
 };
 
 export const isStaffUser = user => {

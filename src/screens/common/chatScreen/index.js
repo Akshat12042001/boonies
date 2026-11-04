@@ -362,6 +362,7 @@ const ChatScreen = () => {
       }
 
       loadConversation();
+      SocketService.ensureListeners();
       SocketService.create();
       SocketService.joinConversation(conversationId);
       SocketService.markRead(conversationId);

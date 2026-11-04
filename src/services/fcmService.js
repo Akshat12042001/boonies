@@ -6,22 +6,26 @@ import {
   onNotificationOpenedApp,
   onTokenRefresh as subscribeToTokenRefresh,
 } from '@react-native-firebase/messaging';
-import {Platform} from 'react-native';
 import notifee, {EventType} from '@notifee/react-native';
 
 class FCMService {
-  constructor() {
-    this.messageListener = null;
-    this.onTokenRefreshListener = null;
-    this.onNotifeeForegroundSub = null;
-  }
+  static messageListener = null;
+  static onTokenRefreshListener = null;
+  static onNotifeeForegroundSub = null;
+  static onNotifeeBackgroundSub = null;
+  static isRegistered = false;
 
   static register = (onNotification, onOpenNotification, onTokenRefresh) => {
+    if (FCMService.isRegistered) {
+      FCMService.deregister();
+    }
+
     FCMService.createNotificationListeners(
       onNotification,
       onOpenNotification,
       onTokenRefresh,
     );
+    FCMService.isRegistered = true;
   };
 
   static createNotificationListeners = (
@@ -36,63 +40,62 @@ class FCMService {
         onTokenRefresh?.(res);
       })
       .catch(() => {});
+
     onNotificationOpenedApp(messaging, remoteMessage => {
       if (remoteMessage) {
-        const notification = remoteMessage;
-        onOpenNotification(notification, true);
+        onOpenNotification?.(remoteMessage, true);
       }
     });
 
-    getInitialNotification(messaging).then(remoteMessage => {
-      if (remoteMessage) {
-        const notification = remoteMessage;
-        onOpenNotification(notification, true);
-      }
-    });
-
-    this.messageListener = onMessage(messaging, async remoteMessage => {
-      if (remoteMessage) {
-        let notification = null;
-        if (Platform.OS === 'ios') {
-          notification = remoteMessage;
-        } else {
-          notification = remoteMessage;
+    getInitialNotification(messaging)
+      .then(remoteMessage => {
+        if (remoteMessage) {
+          onOpenNotification?.(remoteMessage, true);
         }
+      })
+      .catch(() => {});
 
-        // Foreground receipt, not a click
-        onNotification(notification, false);
+    // Foreground FCM delivery (also handled for display in index.js).
+    FCMService.messageListener = onMessage(messaging, async remoteMessage => {
+      if (remoteMessage) {
+        onNotification?.(remoteMessage, false);
       }
     });
 
-    // Handle presses on Notifee notifications while app is in foreground/background
     try {
-      this.onNotifeeForegroundSub = notifee.onForegroundEvent(
+      FCMService.onNotifeeForegroundSub = notifee.onForegroundEvent(
         ({type, detail}) => {
           if (type === EventType.PRESS) {
-            onOpenNotification(detail?.notification || detail, true);
+            onOpenNotification?.(detail?.notification || detail, true);
           }
         },
       );
 
-      this.onNotifeeForegroundSub = notifee.onBackgroundEvent(
-        ({type, detail}) => {
+      FCMService.onNotifeeBackgroundSub = notifee.onBackgroundEvent(
+        async ({type, detail}) => {
           if (type === EventType.PRESS) {
-            onOpenNotification(detail?.notification || detail, true);
+            onOpenNotification?.(detail?.notification || detail, true);
           }
         },
       );
     } catch (e) {}
 
-    this.onTokenRefreshListener = subscribeToTokenRefresh(
+    FCMService.onTokenRefreshListener = subscribeToTokenRefresh(
       messaging,
-      onTokenRefresh,
+      token => onTokenRefresh?.(token),
     );
   };
 
   static deregister = () => {
-    this.messageListener?.();
-    this.onTokenRefreshListener && this.onTokenRefreshListener?.();
-    this.onNotifeeForegroundSub && this.onNotifeeForegroundSub?.();
+    FCMService.messageListener?.();
+    FCMService.onTokenRefreshListener?.();
+    FCMService.onNotifeeForegroundSub?.();
+    FCMService.onNotifeeBackgroundSub?.();
+    FCMService.messageListener = null;
+    FCMService.onTokenRefreshListener = null;
+    FCMService.onNotifeeForegroundSub = null;
+    FCMService.onNotifeeBackgroundSub = null;
+    FCMService.isRegistered = false;
   };
 }
 

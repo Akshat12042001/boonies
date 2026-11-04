@@ -601,7 +601,14 @@ export const getHostDirectBookingsQueryParams = ({
   checkOutFrom = null,
   isActiveUpcoming = true,
 } = {}) => {
-  const params = {page, limit};
+  // filterScope is used for RTK cache keys; stripped before the HTTP request.
+  const params = {
+    page,
+    limit,
+    filterScope: isActiveUpcoming
+      ? BOOKING_LIST_FILTER_SCOPE.ACTIVE_UPCOMING
+      : BOOKING_LIST_FILTER_SCOPE.ALL,
+  };
 
   const trimmedSearch = String(search || '').trim();
   if (trimmedSearch) {
