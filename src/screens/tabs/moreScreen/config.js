@@ -54,6 +54,12 @@ const DATA = [
     modules: [STAFF_MODULE.FOOD_MENU],
   },
   {
+    id: 9,
+    title: 'Calendar',
+    icon: <CalendarIcon color={COLORS.PRIMARY} size={20} />,
+    modules: [STAFF_MODULE.CALENDAR],
+  },
+  {
     id: 3,
     title: 'Logout',
     icon: <LogoutIcon color={COLORS.RED_ERROR} size={20} />,

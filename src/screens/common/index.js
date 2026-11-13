@@ -19,3 +19,4 @@ export {default as ChatScreen} from './chatScreen';
 export {default as PropertiesCommonScreen} from './propertiesCommonScreen';
 export {default as StaffManagementScreen} from './staffManagementScreen';
 export {default as MenuCommonScreen} from './menuCommonScreen';
+export {default as CalendarScreen} from './calendarScreen';

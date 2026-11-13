@@ -30,6 +30,7 @@ export {default as ChevronUpIcon} from './chevronUpIcon';
 export {default as ChevronDownIcon} from './chevronDownIcon';
 export {default as CopyIcon} from './copyIcon';
 export {default as LocationPinIcon} from './locationPinIcon';
+export {default as InfoIcon} from './infoIcon';
 export {default as GuestsIcon} from './guestsIcon';
 export {default as BedIcon} from './bedIcon';
 export {default as BathroomIcon} from './bathroomIcon';

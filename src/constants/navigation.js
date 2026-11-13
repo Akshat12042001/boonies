@@ -38,5 +38,6 @@ export default {
         PROPERTIES_COMMON_SCREEN: 'Common-PropertiesCommonScreen',
         STAFF_MANAGEMENT_SCREEN: 'Common-StaffManagementScreen',
         MENU_COMMON_SCREEN: 'Common-MenuCommonScreen',
+        CALENDAR_SCREEN: 'Common-CalendarScreen'
     }
 };

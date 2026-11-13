@@ -113,6 +113,11 @@ const MoreScreen = () => {
           screen: NAVIGATION.COMMON.MENU_COMMON_SCREEN,
         });
         break;
+      case 9:
+        navigation.navigate(NAVIGATION.STACKS.COMMON,{
+          screen: NAVIGATION.COMMON.CALENDAR_SCREEN,
+        });
+        break;
       case 3:
         handleLogoutPress();
         break;

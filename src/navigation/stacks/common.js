@@ -23,6 +23,7 @@ import {
   PropertiesCommonScreen,
   StaffManagementScreen,
   MenuCommonScreen,
+  CalendarScreen,
 } from '../../screens/common';
 import config from '../config';
 
@@ -114,6 +115,10 @@ export default () => {
       <Stack.Screen
         name={NAVIGATION.COMMON.MENU_COMMON_SCREEN}
         component={MenuCommonScreen}
+      />
+      <Stack.Screen
+        name={NAVIGATION.COMMON.CALENDAR_SCREEN}
+        component={CalendarScreen}
       />
     </Stack.Navigator>
   );

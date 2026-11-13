@@ -258,7 +258,9 @@ const HomeScreen = () => {
         Icon: MenuIcon,
         color: COLORS.LOGIN_PRIMARY,
         background: '#EDF4EF',
-        onPress: () => navigation.navigate(NAVIGATION.TABS.MENU_SCREEN),
+        onPress: () => navigation.navigate(NAVIGATION.STACKS.COMMON, {
+          screen: NAVIGATION.COMMON.MENU_COMMON_SCREEN,
+        }),
       });
     }
 
