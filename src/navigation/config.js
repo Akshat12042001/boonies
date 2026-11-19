@@ -12,6 +12,6 @@ export default {
   },
   headerStyleInterpolator: HeaderStyleInterpolators.forSlideLeft,
   cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
-  gestureEnabled: false,
+  // gestureEnabled: false,
   // gestureDirection: 'horizontal',
 };

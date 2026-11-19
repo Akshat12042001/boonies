@@ -34,6 +34,7 @@ const CalendarSelectionCard = ({
   endDate,
   reason = '',
   pricePerDay,
+  isBlocking = false,
   onChangeReason,
   onClearStart,
   onClearSelection,
@@ -125,6 +126,7 @@ const CalendarSelectionCard = ({
       </StyledText>
 
       <TextInput
+        editable={!isBlocking}
         placeholder={t('CALENDAR.REASON_PLACEHOLDER')}
         placeholderTextColor={COLORS.TEXT_MUTED}
         style={styles.reasonInput}
@@ -135,14 +137,17 @@ const CalendarSelectionCard = ({
       <CustomButton
         title={t('CALENDAR.BLOCK_DATES')}
         onPress={onBlockDates}
+        isLoading={isBlocking}
+        isDisabled={isBlocking}
         containerStyle={styles.primaryButton}
       />
 
       <TouchableOpacity
         accessibilityRole="button"
         activeOpacity={0.85}
+        disabled={isBlocking}
         onPress={onClearSelection}
-        style={styles.secondaryButton}>
+        style={[styles.secondaryButton, isBlocking && {opacity: 0.65}]}>
         <StyledText color={COLORS.LOGIN_PRIMARY} size={15} variant="semiBold">
           {t('CALENDAR.CLEAR_SELECTION')}
         </StyledText>

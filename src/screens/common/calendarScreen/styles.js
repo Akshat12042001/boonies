@@ -16,6 +16,13 @@ export default StyleSheet.create({
     justifyContent: 'center',
     minHeight: 240,
   },
+  skeletonContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  blockedSkeletonContainer: {
+    marginTop: 12,
+  },
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -169,12 +176,59 @@ export default StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 18,
   },
+  offSeasonEnabledRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  offSeasonEnabledCopy: {
+    flex: 1,
+    paddingRight: 12,
+  },
   offSeasonTitle: {
     marginBottom: 8,
   },
   offSeasonDescription: {
     lineHeight: 20,
-    marginBottom: 16,
+    marginBottom: 10,
+  },
+  offSeasonEmptyText: {
+    lineHeight: 18,
+  },
+  offSeasonPeriodsList: {
+    marginTop: 16,
+  },
+  offSeasonPeriodRow: {
+    alignItems: 'center',
+    backgroundColor: COLORS.WHITE,
+    borderColor: COLORS.BORDER_LIGHT,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: 'row',
+    marginBottom: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  offSeasonPeriodRowLast: {
+    marginBottom: 0,
+  },
+  offSeasonPeriodCopy: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  offSeasonPeriodTitle: {
+    marginBottom: 4,
+  },
+  offSeasonPeriodActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  offSeasonPeriodAction: {
+    alignItems: 'center',
+    height: 32,
+    justifyContent: 'center',
+    marginLeft: 4,
+    width: 32,
   },
   addPeriodButton: {
     alignItems: 'center',
@@ -184,6 +238,17 @@ export default StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 14,
     paddingVertical: 14,
+  },
+  addPeriodButtonEnabled: {
+    backgroundColor: COLORS.PRIMARY,
+    elevation: 2,
+    marginBottom: 0,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    shadowColor: COLORS.PRIMARY_DARK,
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
   },
   addPeriodLabel: {
     marginLeft: 6,

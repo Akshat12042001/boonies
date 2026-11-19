@@ -13,10 +13,12 @@ const ENDPOINTS = {
   REVIEWS: '/reviews',
   HOST_PENDING_REVIEWS: '/reviews/host/pending',
   HOMESTAY_BOOKING_CALENDAR: '/bookings/homestays',
+  BLOCKED_DATES: '/bookings/blocked-dates',
   DIRECT_BOOKING_BY_HOST: '/deals/direct-booking/by/host',
   HOST_DIRECT_BOOKINGS: '/deals/host/direct-bookings',
   HOST_ALL_BOOKINGS: '/deals/host/all-bookings',
   HOST_BOOKINGS: '/deals/host/bookings',
+  HOST_CALENDAR_BOOKINGS: '/bookings/host/bookings',
   DEAL_PREVIEW: '/deals',
   NOTIFICATIONS: '/notification',
   AMENITIES: '/homestays/amenities/all',
@@ -287,6 +289,62 @@ export const makeGetHomestayBlockedDatesRequest = homestayId => {
     .then(res => res.data);
 };
 
+export const makeCreateHomestayBlockedDatesRequest = (homestayId, data) => {
+  return APIClient()
+    .post(
+      `${ENDPOINTS.HOMESTAY_BOOKING_CALENDAR}/${homestayId}/blocked-dates`,
+      data,
+    )
+    .then(res => res.data);
+};
+
+export const makeDeleteBlockedDateRequest = blockedDateId => {
+  return APIClient()
+    .delete(`${ENDPOINTS.BLOCKED_DATES}/${blockedDateId}`)
+    .then(res => res.data);
+};
+
+export const makeGetOffSeasonPeriodsRequest = homestayId => {
+  return APIClient()
+    .get(`${ENDPOINTS.HOMESTAY}/${homestayId}/off-season-periods`)
+    .then(res => res.data);
+};
+
+export const makeCreateOffSeasonPeriodRequest = (homestayId, data) => {
+  return APIClient()
+    .post(`${ENDPOINTS.HOMESTAY}/${homestayId}/off-season-periods`, data, {
+      skipErrorToast: true,
+    })
+    .then(res => res.data);
+};
+
+export const makeUpdateOffSeasonPeriodRequest = (
+  homestayId,
+  periodId,
+  data,
+) => {
+  return APIClient()
+    .put(
+      `${ENDPOINTS.HOMESTAY}/${homestayId}/off-season-periods/${periodId}`,
+      data,
+      {
+        skipErrorToast: true,
+      },
+    )
+    .then(res => res.data);
+};
+
+export const makeDeleteOffSeasonPeriodRequest = (homestayId, periodId) => {
+  return APIClient()
+    .delete(
+      `${ENDPOINTS.HOMESTAY}/${homestayId}/off-season-periods/${periodId}`,
+      {
+        skipErrorToast: true,
+      },
+    )
+    .then(res => res.data);
+};
+
 export const makeCreateDirectBookingRequest = data => {
   return APIClient()
     .post(ENDPOINTS.DIRECT_BOOKING_BY_HOST, data)
@@ -296,6 +354,14 @@ export const makeCreateDirectBookingRequest = data => {
 export const makeGetHostDirectBookingsRequest = params => {
   return APIClient()
     .get(ENDPOINTS.HOST_DIRECT_BOOKINGS, {params})
+    .then(res => res.data);
+};
+
+export const makeGetHostCalendarBookingsRequest = (homestayId, bookingMonth) => {
+  return APIClient()
+    .get(`${ENDPOINTS.HOST_CALENDAR_BOOKINGS}/${homestayId}`, {
+      params: {bookingMonth},
+    })
     .then(res => res.data);
 };
 

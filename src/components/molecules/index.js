@@ -24,4 +24,5 @@ export {
   DAY_STATUS,
 } from './availabilityCalendar';
 export {default as CalendarSelectionCard} from './calendarSelectionCard';
+export {default as CalendarBookingCard} from './calendarBookingCard';
 export {default as BlockedEntriesCard} from './blockedEntriesCard';

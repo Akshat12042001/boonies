@@ -1,5 +1,5 @@
 import {StyleSheet} from 'react-native';
-import {COLORS} from '../../../constants';
+import {COLORS, FONTS} from '../../../constants';
 
 export default StyleSheet.create({
   card: {
@@ -7,135 +7,169 @@ export default StyleSheet.create({
     borderColor: COLORS.BORDER_LIGHT,
     borderRadius: 16,
     borderWidth: 1,
-    paddingBottom: 14,
+    overflow: 'hidden',
+    paddingBottom: 12,
     paddingHorizontal: 12,
     paddingTop: 14,
   },
   header: {
+    gap: 12,
+    marginBottom: 12,
+    paddingHorizontal: 2,
+  },
+  headerTop: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
-    paddingHorizontal: 4,
   },
-  headerSide: {
+  monthNav: {
     alignItems: 'center',
     flexDirection: 'row',
-    minWidth: 88,
-  },
-  headerSideEnd: {
-    justifyContent: 'flex-end',
+    flexShrink: 1,
   },
   navButton: {
     alignItems: 'center',
-    height: 32,
+    borderColor: COLORS.BORDER,
+    borderRadius: 999,
+    borderWidth: 1,
+    height: 30,
     justifyContent: 'center',
-    width: 32,
+    width: 30,
   },
   chevronLeft: {
     transform: [{rotate: '180deg'}],
   },
+  monthLabel: {
+    marginHorizontal: 10,
+  },
   todayButton: {
     alignItems: 'center',
-    backgroundColor: COLORS.MENU_GREEN_BACKGROUND,
-    borderRadius: 999,
-    flexDirection: 'row',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  todayLabel: {
-    marginLeft: 4,
-  },
-  weekRow: {
-    flexDirection: 'row',
-    marginBottom: 6,
-    marginTop: 4,
-  },
-  weekDay: {
-    alignItems: 'center',
-    flex: 1,
-    paddingVertical: 4,
-  },
-  daysGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  dayCell: {
-    height: 54,
-    justifyContent: 'space-between',
-    marginBottom: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 6,
-    width: `${100 / 7}%`,
-  },
-  dayInner: {
-    borderColor: COLORS.BORDER_LIGHT,
-    borderRadius: 12,
+    borderColor: COLORS.BORDER,
+    borderRadius: 8,
     borderWidth: 1,
-    flex: 1,
-    justifyContent: 'space-between',
-    paddingHorizontal: 5,
-    paddingVertical: 4,
-  },
-  dayInnerPast: {
-    backgroundColor: COLORS.WHITE,
-    borderColor: COLORS.BORDER_LIGHT,
-  },
-  dayInnerOpen: {
-    backgroundColor: COLORS.WHITE,
-    borderColor: COLORS.BORDER_LIGHT,
-  },
-  dayInnerBlocked: {
-    backgroundColor: COLORS.GREYSCALE_100,
-    borderColor: COLORS.BORDER_LIGHT,
-  },
-  dayInnerBooked: {
-    backgroundColor: '#FDE8EC',
-    borderColor: '#F4C4CC',
-  },
-  dayInnerSelected: {
-    backgroundColor: COLORS.GREYSCALE_900,
-    borderColor: COLORS.GREYSCALE_900,
-  },
-  dayEmpty: {
-    opacity: 0,
-  },
-  dayPrice: {
-    alignSelf: 'flex-end',
+    flexShrink: 0,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   legendRow: {
+    alignItems: 'center',
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginTop: 10,
-    paddingHorizontal: 2,
+    gap: 14,
   },
   legendItem: {
     alignItems: 'center',
     flexDirection: 'row',
-    marginBottom: 4,
-    marginRight: 8,
   },
   legendDot: {
     alignItems: 'center',
-    borderRadius: 10,
-    height: 20,
+    borderRadius: 999,
+    height: 12,
     justifyContent: 'center',
     marginRight: 6,
-    width: 20,
+    overflow: 'hidden',
+    width: 12,
   },
-  legendSelected: {
-    backgroundColor: COLORS.GREYSCALE_900,
+  legendConfirmed: {
+    backgroundColor: COLORS.PRIMARY,
   },
   legendBlocked: {
+    backgroundColor: COLORS.GREYSCALE_200,
+  },
+  legendBlockedSlash: {
+    backgroundColor: COLORS.GREYSCALE_500,
+    height: 1.5,
+    position: 'absolute',
+    transform: [{rotate: '-45deg'}],
+    width: 14,
+  },
+  legendSelected: {
+    backgroundColor: '#D7EBD9',
+    borderColor: '#B7D7BB',
+    borderWidth: 1,
+  },
+  weekRow: {
+    borderBottomColor: COLORS.BORDER_LIGHT,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    marginBottom: 2,
+    paddingBottom: 8,
+  },
+  weekDay: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  weeks: {
+    borderColor: COLORS.BORDER_LIGHT,
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  weekBlock: {
+    borderBottomColor: COLORS.BORDER_LIGHT,
+    borderBottomWidth: 1,
+    position: 'relative',
+  },
+  weekBlockLast: {
+    borderBottomWidth: 0,
+  },
+  daysRow: {
+    flexDirection: 'row',
+  },
+  dayCell: {
+    backgroundColor: COLORS.WHITE,
+    flex: 1,
+    minHeight: 64,
+    paddingHorizontal: 4,
+    paddingTop: 6,
+  },
+  dayCellPast: {
     backgroundColor: COLORS.GREYSCALE_100,
   },
-  legendBooked: {
-    backgroundColor: '#FDE8EC',
+  dayCellSelected: {
+    backgroundColor: '#D7EBD9',
   },
-  legendOpen: {
+  dayCellBlocked: {
+    backgroundColor: COLORS.GREYSCALE_100,
+  },
+  dayCellBooked: {
     backgroundColor: COLORS.WHITE,
-    borderColor: COLORS.BORDER,
-    borderWidth: 1,
+  },
+  dayNumberWrap: {
+    alignItems: 'center',
+    height: 22,
+    justifyContent: 'center',
+    width: 22,
+  },
+  dayNumberToday: {
+    backgroundColor: COLORS.PRIMARY,
+    borderRadius: 999,
+  },
+  eventsLayer: {
+    left: 0,
+    paddingBottom: 6,
+    paddingTop: 2,
+    position: 'absolute',
+    right: 0,
+    top: 30,
+  },
+  eventPill: {
+    alignItems: 'center',
+    backgroundColor: COLORS.PRIMARY,
+    borderRadius: 10,
+    justifyContent: 'center',
+    marginHorizontal: 2,
+    minHeight: 20,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    position: 'absolute',
+  },
+  eventPillText: {
+    color: COLORS.WHITE,
+    fontFamily: FONTS.semiBold,
+    fontSize: 10,
+    lineHeight: 13,
+    textAlign: 'center',
   },
 });

@@ -286,6 +286,7 @@ export const formatHostDirectBooking = booking => {
 
   return {
     id: String(booking?.id || ''),
+    homestayId: String(homestay?.id || booking?.homestayId || ''),
     homestayTitle: homestay?.title || '',
     guestName: [guest?.firstName, guest?.lastName].filter(Boolean).join(' '),
     guestPhone: guest?.phone || '',
